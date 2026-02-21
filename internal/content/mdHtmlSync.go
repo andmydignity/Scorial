@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -137,13 +136,13 @@ func Sync(mdDir string) error {
 		return nil
 	})
 	files := []string{}
-	mutexFiles := sync.Mutex{}
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
 		if entry.IsDir() {
+			continue
 		}
 		file := entry.Name()
 		if file == "checksum.db" {
