@@ -20,7 +20,7 @@ type CmsConfig struct {
 		Rps   float64
 		Burst int
 	}
-	HttpsOn      bool
+	HTTPSMode    bool
 	CertFile     string
 	KeyFile      string
 	MDDir        string
@@ -42,7 +42,13 @@ func (cms *CmsStruct) Start() error {
 		ErrorLog:     slog.NewLogLogger(cms.Logger.Handler(), slog.LevelError),
 	}
 	shutdownErr := make(chan error)
+	checksumDB, err := content.OpenDB()
+	if err != nil {
+		cms.Logger.Error("Couldn't open checksum database.")
+	}
+	defer checksumDB.Close()
 	go func() {
+		defer checksumDB.Close()
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 		s := <-quit
@@ -51,18 +57,15 @@ func (cms *CmsStruct) Start() error {
 		defer cancel()
 		shutdownErr <- srv.Shutdown(ctx)
 	}()
-	go func() {
-		for {
-			err := content.Sync(cms.Config.MDDir)
-			if err != nil {
-				cms.Logger.Error("Error while syncing MD and HTML.", "error", err.Error())
-			}
-			time.Sleep(time.Duration(cms.Config.SyncInterval) * time.Second)
+	err = content.FirstSync(cms.Config.MDDir, checksumDB)
+	if err != nil {
+		return err
+	}
+	// Cannot get errors from here..., gotta refactor
+	go content.Sync(checksumDB, cms.Config.MDDir, cms.Logger)
 
-		}
-	}()
 	cms.Logger.Info(fmt.Sprintf("Starting server at port %d", cms.Config.Port))
-	if cms.Config.HttpsOn {
+	if cms.Config.HTTPSMode {
 		if cms.Config.KeyFile == "" || cms.Config.CertFile == "" {
 			cms.Logger.Warn("HTTPS mode is on but no cert files are supplied. Using self-signed certs, which browsers will complain about.")
 			_, _, err := certSetup()

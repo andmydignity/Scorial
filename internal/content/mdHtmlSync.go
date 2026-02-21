@@ -4,13 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"cms/internal/render"
 
+	"github.com/fsnotify/fsnotify"
 	_ "modernc.org/sqlite"
 )
 
@@ -18,7 +22,7 @@ const dbLocation = "databases"
 
 var ErrDidntExist = errors.New("didn't exist in the first place")
 
-func openDB() (*sql.DB, error) {
+func OpenDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", filepath.Join(dbLocation, "checksum.db"))
 	if err != nil {
 		return nil, err
@@ -64,15 +68,9 @@ func purgeNonExistent(db *sql.DB, fileNames []string) error {
 	return rows.Err()
 }
 
-// TODO:Add actually creating the files.
-func Sync(mdDir string) error {
-	db, err := openDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+func FirstSync(mdDir string, db *sql.DB) error {
 	var entries []os.DirEntry
-	err = filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -113,4 +111,65 @@ func Sync(mdDir string) error {
 		return err
 	}
 	return nil
+}
+
+// TODO: Since this is called as a go routine, i cannot get errors as function returns. Slapped some loggers for now, but gotta find a better way.
+func Sync(db *sql.DB, mdDir string, logger *slog.Logger) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logger.Error("Sync go func error", "error", err)
+		return err
+	}
+	defer watcher.Close()
+
+	go func() {
+		for event := range watcher.Events {
+			if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
+				st, err := os.Stat(event.Name)
+				if err == nil {
+					if st.IsDir() && !slices.Contains(watcher.WatchList(), event.Name) {
+						watcher.Add(event.Name)
+					}
+					continue
+				}
+
+				checksum, err := checksumCalculate(event.Name)
+				if err != nil {
+					logger.Error("Sync go func error", "error", err)
+					return
+				}
+				if err := appendChecksum(db, event.Name, checksum); err != nil {
+					logger.Error("Sync go func error", "error", err)
+					return
+				}
+				extensionSanitized, _ := strings.CutSuffix(event.Name, ".md")
+				if err := render.SaveMdtoHTML(event.Name, filepath.Join("assets", "pages", extensionSanitized)); err != nil {
+					logger.Error("Sync go func error", "error", err)
+					return
+				}
+			} else if event.Has(fsnotify.Remove) {
+				if err := deleteChecksum(db, event.Name); err != nil {
+					logger.Error("Sync go func error", "error", err)
+					return
+				}
+				// TODO:Implement HTML file deletion
+			}
+		}
+	}()
+
+	if err := watcher.Add(mdDir); err != nil {
+		logger.Error("Sync go func error", "error", err)
+		return err
+	}
+	err = filepath.WalkDir(mdDir, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			watcher.Add(path)
+		}
+		return nil
+	})
+	if err != nil {
+		logger.Error("Sync go func error", "error", err)
+		return err
+	}
+	return err
 }

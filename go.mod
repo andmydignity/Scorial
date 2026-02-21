@@ -3,6 +3,8 @@ module cms
 go 1.25.7
 
 require (
+	github.com/adrg/frontmatter v0.2.0
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gomarkdown/markdown v0.0.0-20260217112301-37c66b85d6ab
 	github.com/julienschmidt/httprouter v1.3.0
 	golang.org/x/time v0.14.0
@@ -11,7 +13,6 @@ require (
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/adrg/frontmatter v0.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
