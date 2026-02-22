@@ -47,22 +47,24 @@ func (cms *CmsStruct) Start() error {
 		cms.Logger.Error("Couldn't open checksum database.")
 	}
 	defer checksumDB.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go content.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger)
 	go func() {
-		defer checksumDB.Close()
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 		s := <-quit
 		cms.Logger.Info("Shutting down.", "signal", s.String())
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+		checksumDB.Close()
+		cancel()
+		ctx, cancel2 := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel2()
 		shutdownErr <- srv.Shutdown(ctx)
 	}()
 	err = content.FirstSync(cms.Config.MDDir, checksumDB)
 	if err != nil {
 		return err
 	}
-	// Cannot get errors from here..., gotta refactor
-	go content.Sync(checksumDB, cms.Config.MDDir, cms.Logger)
 
 	cms.Logger.Info(fmt.Sprintf("Starting server at port %d", cms.Config.Port))
 	if cms.Config.HTTPSMode {

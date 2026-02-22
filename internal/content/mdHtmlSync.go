@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -61,6 +60,7 @@ func purgeNonExistent(db *sql.DB, fileNames []string) error {
 			if err := deleteChecksum(db, file); err != nil {
 				return err
 			}
+
 			// TODO: Implement HTML file deletion.
 		}
 	}
@@ -69,107 +69,127 @@ func purgeNonExistent(db *sql.DB, fileNames []string) error {
 }
 
 func FirstSync(mdDir string, db *sql.DB) error {
-	var entries []os.DirEntry
+	var entries []string
 	err := filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		entries = append(entries, d)
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(mdDir, path)
+		if err != nil {
+			return err
+		}
+		entries = append(entries, rel)
 		return nil
 	})
-	files := []string{}
 	if err != nil {
 		return err
 	}
-
-	for _, entry := range entries {
-		// Shouldn't be possible but still check.
-		if entry.IsDir() {
+	fullpaths := []string{}
+	for _, file := range entries {
+		if file == "." {
 			continue
 		}
-		file := entry.Name()
-
-		checksum, err := checksumCalculate(filepath.Join(mdDir, file))
-		if err != nil {
-			return err
-		}
-		err = appendChecksum(db, file, checksum)
-		if err != nil {
-			return err
-		}
-		files = append(files, file)
 		fullpath := filepath.Join(mdDir, file)
+		checksum, err := checksumCalculate(fullpath)
+		if err != nil {
+			return err
+		}
+		err = appendChecksum(db, fullpath, checksum)
+		if err != nil {
+			return err
+		}
+
 		extensionSanitized, _ := strings.CutSuffix(file, ".md")
 		err = render.SaveMdtoHTML(fullpath, filepath.Join("assets", "pages", extensionSanitized))
 		if err != nil {
 			return err
 		}
+		fullpaths = append(fullpaths, fullpath)
 	}
-
-	err = purgeNonExistent(db, files)
+	err = purgeNonExistent(db, fullpaths)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// TODO: Since this is called as a go routine, i cannot get errors as function returns. Slapped some loggers for now, but gotta find a better way.
-func Sync(db *sql.DB, mdDir string, logger *slog.Logger) error {
+func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		logger.Error("Sync go func error", "error", err)
 		return err
 	}
 	defer watcher.Close()
 
-	go func() {
-		for event := range watcher.Events {
-			if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
-				st, err := os.Stat(event.Name)
-				if err == nil {
-					if st.IsDir() && !slices.Contains(watcher.WatchList(), event.Name) {
-						watcher.Add(event.Name)
-					}
-					continue
-				}
-
-				checksum, err := checksumCalculate(event.Name)
-				if err != nil {
-					logger.Error("Sync go func error", "error", err)
-					return
-				}
-				if err := appendChecksum(db, event.Name, checksum); err != nil {
-					logger.Error("Sync go func error", "error", err)
-					return
-				}
-				extensionSanitized, _ := strings.CutSuffix(event.Name, ".md")
-				if err := render.SaveMdtoHTML(event.Name, filepath.Join("assets", "pages", extensionSanitized)); err != nil {
-					logger.Error("Sync go func error", "error", err)
-					return
-				}
-			} else if event.Has(fsnotify.Remove) {
-				if err := deleteChecksum(db, event.Name); err != nil {
-					logger.Error("Sync go func error", "error", err)
-					return
-				}
-				// TODO:Implement HTML file deletion
-			}
-		}
-	}()
-
-	if err := watcher.Add(mdDir); err != nil {
-		logger.Error("Sync go func error", "error", err)
-		return err
-	}
+	// Add existing directories
 	err = filepath.WalkDir(mdDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if d.IsDir() {
-			watcher.Add(path)
+			if err := watcher.Add(path); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
 	if err != nil {
-		logger.Error("Sync go func error", "error", err)
 		return err
 	}
-	return err
+
+	// Main event loop (blocks until ctx cancelled)
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("Sync shutting down")
+			return nil
+
+		case err := <-watcher.Errors:
+			logger.Error("Watcher error", "error", err)
+
+		case event := <-watcher.Events:
+			if event.Op&(fsnotify.Create|fsnotify.Write) != 0 {
+
+				st, err := os.Stat(event.Name)
+				if err == nil && st.IsDir() {
+					// Add new directories dynamically
+					if err := watcher.Add(event.Name); err != nil {
+						logger.Error("Failed to add new dir", "error", err)
+					}
+					continue
+				}
+
+				fullpath := event.Name
+
+				checksum, err := checksumCalculate(fullpath)
+				if err != nil {
+					logger.Error("Checksum error", "error", err)
+					continue
+				}
+
+				if err := appendChecksum(db, fullpath, checksum); err != nil {
+					logger.Error("DB error", "error", err)
+					continue
+				}
+
+				suffixCut, _ := strings.CutSuffix(fullpath, ".md")
+				extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+
+				if err := render.SaveMdtoHTML(
+					fullpath,
+					filepath.Join("assets", "pages", extensionSanitized),
+				); err != nil {
+					logger.Error("Render error", "error", err)
+					continue
+				}
+
+			} else if event.Op&fsnotify.Remove != 0 {
+				if err := deleteChecksum(db, event.Name); err != nil {
+					logger.Error("Delete checksum error", "error", err)
+				}
+			}
+		}
+	}
 }
