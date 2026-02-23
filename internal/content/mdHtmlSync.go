@@ -4,15 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"cms/internal/render"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/sgtdi/fswatcher"
 	_ "modernc.org/sqlite"
 )
@@ -77,65 +76,163 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 	defer watcher.Close()
 	go watcher.Watch(ctx)
 	for event := range watcher.Events() {
-		for _, t := range event.Types {
-			fswatcher.Debouncer
-		}
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("Sync shutting down")
-			return nil
+		types := event.Types
+		if slices.Contains(types, fswatcher.EventRemove) {
+			path := event.Path
+			path = filepath.Clean(path)
+			parts := strings.Split(path, string(filepath.Separator))
+			idx := -1
+			for i, p := range parts {
+				if p == mdDir {
+					idx = i
+					break
+				}
+			}
+			if idx == -1 {
+				logger.Error("Error in the relativezation of the absolute path", "error", err.Error())
+			}
+			path = filepath.Join(parts[idx:]...)
 
-		case err := <-watcher.Errors:
-			logger.Error("Watcher error", "error", err)
-
-		case event := <-watcher.Events:
-
-			if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
-
-				st, err := os.Stat(event.Name)
-				if err == nil && st.IsDir() {
-					// Add new directories dynamically
-					if err := watcher.Add(event.Name); err != nil {
-						logger.Error("Failed to add new dir", "error", err)
+			if !strings.Contains(path, ".md") {
+				files := []string{}
+				err := filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
+					if err != nil {
+						return err
 					}
-					continue
-				}
-
-				checksum, err := checksumCalculate(event.Name)
+					if d.IsDir() {
+						return nil
+					}
+					rel, err := filepath.Rel(mdDir, path)
+					if err != nil {
+						return err
+					}
+					files = append(files, rel)
+					return nil
+				})
 				if err != nil {
-					logger.Error("Checksum error", "error", err)
-					continue
+					logger.Error("Couldn't get all files in md dir.", "error", err.Error())
 				}
-
-				if err := appendChecksum(db, event.Name, checksum); err != nil {
-					logger.Error("DB error", "error", err)
-					continue
+				err = purgeNonExistent(db, files)
+				if err != nil {
+					logger.Info("It wasn't a folder")
 				}
-
-				suffixCut, _ := strings.CutSuffix(event.Name, ".md")
+				extensionSanitized, _ := strings.CutPrefix(path, mdDir)
+				err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+				if err != nil {
+					logger.Info("Wasn't a dir", "error", err.Error())
+				}
+			} else {
+				err = deleteChecksum(db, path)
+				if err != nil {
+					logger.Error("Couldn't delete checksum!", "error", err.Error())
+				}
+				suffixCut, _ := strings.CutSuffix(path, ".md")
 				extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+				err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+				if err != nil {
+					logger.Error("Couldn't delete HTML file!", "error", err.Error())
+				}
+			}
+			if slices.Contains(types, fswatcher.EventRename) {
+				path := event.Path
+				path = filepath.Clean(path)
+				parts := strings.Split(path, string(filepath.Separator))
+				idx := -1
+				for i, p := range parts {
+					if p == mdDir {
+						idx = i
+						break
+					}
+				}
+				if idx == -1 {
+					logger.Error("Error in the relativezation of the absolute path", "error", err.Error())
+				}
+				path = filepath.Join(parts[idx:]...)
 
-				if err := render.SaveMdtoHTML(
-					event.Name,
-					filepath.Join("assets", "pages", extensionSanitized),
-				); err != nil {
-					logger.Error("Render error", "error", err)
-					continue
+				if !strings.Contains(path, ".md") {
+					files := []string{}
+					err := filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
+						if err != nil {
+							return err
+						}
+						if d.IsDir() {
+							return nil
+						}
+						rel, err := filepath.Rel(mdDir, path)
+						if err != nil {
+							return err
+						}
+						files = append(files, rel)
+						return nil
+					})
+					if err != nil {
+						logger.Error("Couldn't get all files in md dir.", "error", err.Error())
+					}
+					err = purgeNonExistent(db, files)
+					if err != nil {
+						logger.Info("It wasn't a folder")
+					}
+					extensionSanitized, _ := strings.CutPrefix(path, mdDir)
+					err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+					if err != nil {
+						logger.Info("Wasn't a dir", "error", err.Error())
+					}
+				} else {
+					err = deleteChecksum(db, path)
+					if err != nil {
+						logger.Error("Couldn't delete checksum!", "error", err.Error())
+					}
+					suffixCut, _ := strings.CutSuffix(path, ".md")
+					extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+					err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+					if err != nil {
+						logger.Error("Couldn't delete HTML file!", "error", err.Error())
+					}
+					// my brain is fried, this should work tho for now.
+					FirstSync(mdDir, db)
 				}
+			}
 
-			} else if event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
-				if err := deleteChecksum(db, event.Name); err != nil {
-					logger.Error("Delete checksum error", "error", err)
+		}
+		if slices.Contains(types, fswatcher.EventCreate) || slices.Contains(types, fswatcher.EventMod) {
+			path := event.Path
+			path = filepath.Clean(path)
+			parts := strings.Split(path, string(filepath.Separator))
+			idx := -1
+			for i, p := range parts {
+				if p == mdDir {
+					idx = i
+					break
 				}
-				// This is quite clunky, should ideally be changed but works for now.
-				suffixCut, _ := strings.CutSuffix(event.Name, ".md")
-				extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
-				if err = deleteHTML(filepath.Join("assets", "pages", fmt.Sprintf("%v.html", extensionSanitized))); err != nil {
-					logger.Error("Delete HTML error", "error", err.Error())
-				}
+			}
+			if idx == -1 {
+				logger.Error("Error in the relativezation of the absolute path", "error", err.Error())
+			}
+			path = filepath.Join(parts[idx:]...)
+			st, err := os.Stat(path)
+			if err != nil {
+				logger.Error("File error", "error", err.Error())
+			}
+			if st.IsDir() {
+				continue
+			}
+			checksum, err := checksumCalculate(path)
+			if err != nil {
+				logger.Error("Couldn't calculate checksum!", "error", err.Error())
+			}
+			err = appendChecksum(db, path, checksum)
+			if err != nil {
+				logger.Error("Couldn't append checksum!", "error", err.Error())
+			}
+			suffixCut, _ := strings.CutSuffix(path, ".md")
+			extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+			if err := render.SaveMdtoHTML(
+				path,
+				filepath.Join("assets", "pages", extensionSanitized),
+			); err != nil {
+				logger.Error("Render error", "error", err)
 			}
 		}
 	}
+	return nil
 }
