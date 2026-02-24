@@ -4,11 +4,16 @@ package content
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
+
+const dbLocation = "databases"
+
+var ErrDidntExist = errors.New("didn't exist in the first place")
 
 func OpenDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", filepath.Join(dbLocation, "checksum.db"))
