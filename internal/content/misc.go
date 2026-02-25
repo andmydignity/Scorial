@@ -28,7 +28,11 @@ func OpenDB() (*sql.DB, error) {
 }
 
 func deleteHTML(path string) error {
-	return os.RemoveAll(path)
+	err := os.Remove(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	return err
 }
 
 func purgeNonExistent(db *sql.DB, fileNames []string, mdDir string) error {

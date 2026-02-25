@@ -6,22 +6,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{.Title}}</title>
-  {{ block "css" . }}{{ end }}
-  {{ block "js" . }}{{ end }}
+  <link rel="stylesheet" href="assets/style/common.css">
+  <script src="assets/style/common.js"></script>
+  {{if .Style}}
+  <link rel="stylesheet" href="assets/style/{{.Style}}.css">
+  {{end}}
+  {{if .Script}}
+  <script src="assets/style/{{.Script}}.js"></script>
+  {{end}}
+
+
 </head>
 
 <body>
 
   <div class="navbar">
-    {{ block "navbar" . }}{{end}}
+    {{block "navbar" . }}{{end}}
   </div>
 
   <main class="content">
-    {{ block "content" . }}{{.Content}}{{ end }}
+    {{block "content" . }}{{.Content}}{{end}}
   </main>
 
   <footer class="footer">
-    {{ block "footer" . }}{{end}}
+    {{block "footer" . }}{{end}}
   </footer>
 
 </body>

@@ -15,16 +15,15 @@ import (
 )
 
 type CmsConfig struct {
-	Port      uint16
+	Port      int
 	RateLimit struct {
 		Rps   float64
 		Burst int
 	}
-	HTTPSMode    bool
-	CertFile     string
-	KeyFile      string
-	MDDir        string
-	SyncInterval int
+	HTTPSMode bool
+	CertFile  string
+	KeyFile   string
+	MDDir     string
 }
 
 type CmsStruct struct {

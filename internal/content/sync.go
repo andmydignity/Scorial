@@ -3,6 +3,7 @@ package content
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,48 +16,59 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// TODO: When a folder is renamed, a new folder in pages should generate.
+
+// a
 func FirstSync(mdDir string, db *sql.DB) error {
+	mdDirAbs, err := filepath.Abs(mdDir)
+	if err != nil {
+		return err
+	}
+
 	var entries []string
-	err := filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
+	err = filepath.WalkDir(mdDirAbs, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
-		rel, err := filepath.Rel(mdDir, path)
-		if err != nil {
-			return err
-		}
-		entries = append(entries, rel)
+		entries = append(entries, path)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+
 	fullpaths := []string{}
 	for _, file := range entries {
 		if _, found := strings.CutSuffix(file, ".md"); !found {
 			continue
 		}
-		fullpath := filepath.Join(mdDir, file)
-		checksum, err := checksumCalculate(fullpath)
+		checksum, err := checksumCalculate(file)
 		if err != nil {
 			return err
 		}
-		err = appendChecksum(db, fullpath, checksum)
-		if err != nil {
+		same, err := compareChecksum(db, file, checksum)
+		if errors.Is(err, ErrDidntExist) {
+			appendChecksum(db, mdDirAbs, checksum)
+		} else if err != nil {
 			return err
 		}
-
-		extensionSanitized, _ := strings.CutSuffix(file, ".md")
-		err = render.SaveMdtoHTML(fullpath, filepath.Join("assets", "pages", extensionSanitized))
-		if err != nil {
-			return err
+		if !same {
+			err = appendChecksum(db, file, checksum)
+			if err != nil {
+				return err
+			}
+			extensionSanitized, _ := strings.CutSuffix(filepath.Base(file), ".md")
+			err = render.SaveMdtoHTML(file, filepath.Join("assets", "pages", extensionSanitized))
+			if err != nil {
+				return err
+			}
 		}
-		fullpaths = append(fullpaths, fullpath)
+		fullpaths = append(fullpaths, file)
 	}
-	err = purgeNonExistent(db, fullpaths, mdDir)
+	err = purgeNonExistent(db, fullpaths, mdDirAbs)
 	if err != nil {
 		return err
 	}
@@ -69,31 +81,66 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 		return err
 	}
 	defer watcher.Close()
+	var dirs []string
+	absMdDir, err := filepath.Abs(mdDir)
+	if err != nil {
+		return err
+	}
+	err = filepath.WalkDir(mdDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() {
+			return nil
+		}
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		dirs = append(dirs, abs)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	logger.Info("Start dirs", "dirs", dirs)
 	go watcher.Watch(ctx)
 	for event := range watcher.Events() {
+		logger.Info("Current dirs", "dirs", dirs)
 		types := event.Types
+		path := event.Path
+		logger.Info(path, "types", event.Types)
+		if err != nil {
+			logger.Error(err.Error())
+			continue
+		}
 		if slices.Contains(types, fswatcher.EventRemove) {
 			path := event.Path
+
 			if _, found := strings.CutSuffix(path, ".md"); !found {
-				continue
-			}
-			path = filepath.Clean(path)
-			parts := strings.Split(path, string(filepath.Separator))
-			idx := -1
-			for i, p := range parts {
-				if p == mdDir {
-					idx = i
-					break
+				if !slices.Contains(dirs, path) {
+					continue
 				}
+				suffixCut, _ := strings.CutPrefix(path, absMdDir)
+				targetDir := filepath.Join("assets", "pages", suffixCut)
+				if err := os.RemoveAll(targetDir); err != nil {
+					logger.Error("Error while deleting directory recursively.", "error", err.Error())
+				}
+				continue
+
 			}
-			if idx == -1 {
-				// relativezation,damn...
-				logger.Error("Error in the relativinization of the absolute path", "error", err.Error())
-			}
-			path = filepath.Join(parts[idx:]...)
 
 			suffixCut, _ := strings.CutSuffix(path, ".md")
-			extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
+			if slices.Contains(dirs, path) {
+
+				// Also removes directories.
+				err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized))
+				if err != nil {
+					logger.Error("Error while deleting directory.")
+				}
+				continue
+			}
 			err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
@@ -102,25 +149,20 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 		}
 		if slices.Contains(types, fswatcher.EventRename) {
 			path := event.Path
+
 			if _, found := strings.CutSuffix(path, ".md"); !found {
+				if !slices.Contains(dirs, path) {
+					continue
+				}
+				suffixCut, _ := strings.CutPrefix(path, absMdDir)
+				targetDir := filepath.Join("assets", "pages", suffixCut)
+				if err := os.RemoveAll(targetDir); err != nil {
+					logger.Error("Error while deleting directory recursively.", "error", err.Error())
+				}
 				continue
 			}
-
-			path = filepath.Clean(path)
-			parts := strings.Split(path, string(filepath.Separator))
-			idx := -1
-			for i, p := range parts {
-				if p == mdDir {
-					idx = i
-					break
-				}
-			}
-			if idx == -1 {
-				logger.Error("Error in the relativezation of the absolute path", "error", err.Error())
-			}
-			path = filepath.Join(parts[idx:]...)
 			suffixCut, _ := strings.CutSuffix(path, ".md")
-			extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
@@ -131,27 +173,28 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 
 		if slices.Contains(types, fswatcher.EventCreate) || slices.Contains(types, fswatcher.EventMod) {
 			path := event.Path
-			if _, found := strings.CutSuffix(path, ".md"); !found {
-				continue
-			}
-			path = filepath.Clean(path)
-			parts := strings.Split(path, string(filepath.Separator))
-			idx := -1
-			for i, p := range parts {
-				if p == mdDir {
-					idx = i
-					break
-				}
-			}
-			if idx == -1 {
-				logger.Error("Error in the relativezation of the absolute path", "error", err.Error())
-			}
-			path = filepath.Join(parts[idx:]...)
+
 			st, err := os.Stat(path)
 			if err != nil {
-				logger.Error("File error", "error", err.Error())
+				logger.Error("Couldn't get os.Stat!", "error", err.Error())
+				continue
 			}
+			if _, found := strings.CutSuffix(path, ".md"); !found {
+				if st.IsDir() {
+					if !slices.Contains(dirs, path) {
+						dirs = append(dirs, path)
+						extensionSanitized, _ := strings.CutPrefix(path, absMdDir)
+						err = os.Mkdir(filepath.Join("assets", "pages", extensionSanitized), 0o644)
+						if err != nil {
+							logger.Error("Mkdir failed", "error", err.Error())
+						}
+					}
+				}
+				continue
+			}
+
 			if st.IsDir() {
+				dirs = append(dirs, path)
 				continue
 			}
 			checksum, err := checksumCalculate(path)
@@ -163,7 +206,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 				logger.Error("Couldn't append checksum!", "error", err.Error())
 			}
 			suffixCut, _ := strings.CutSuffix(path, ".md")
-			extensionSanitized, _ := strings.CutPrefix(suffixCut, mdDir)
+			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			if err := render.SaveMdtoHTML(
 				path,
 				filepath.Join("assets", "pages", extensionSanitized),
