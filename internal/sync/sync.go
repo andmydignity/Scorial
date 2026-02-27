@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	paths "cms/internal"
 	"cms/internal/render"
 
 	"github.com/sgtdi/fswatcher"
@@ -18,7 +19,7 @@ import (
 
 // TODO: When a folder is renamed, a new folder in pages should generate.
 
-func FirstSync(mdDir string, db *sql.DB) error {
+func FirstSync(mdDir string, db *sql.DB, rndrConf *render.RenderConfig) error {
 	mdDirAbs, err := filepath.Abs(mdDir)
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ func FirstSync(mdDir string, db *sql.DB) error {
 			appendChecksum(db, file, checksum)
 			prefixCut, _ := strings.CutPrefix(file, mdDirAbs)
 			extensionSanitized, _ := strings.CutSuffix(prefixCut, ".md")
-			err = render.SaveMdtoHTML(file, filepath.Join("assets", "pages", extensionSanitized))
+			err = render.SaveMdtoHTML(file, filepath.Join(paths.AssetsPath, "pages", extensionSanitized), rndrConf)
 			if err != nil {
 				return err
 			}
@@ -67,7 +68,7 @@ func FirstSync(mdDir string, db *sql.DB) error {
 			}
 			prefixCut, _ := strings.CutPrefix(file, mdDirAbs)
 			extensionSanitized, _ := strings.CutSuffix(prefixCut, ".md")
-			err = render.SaveMdtoHTML(file, filepath.Join("assets", "pages", extensionSanitized))
+			err = render.SaveMdtoHTML(file, filepath.Join(paths.AssetsPath, "pages", extensionSanitized), rndrConf)
 			if err != nil {
 				return err
 			}
@@ -84,7 +85,7 @@ func FirstSync(mdDir string, db *sql.DB) error {
 // TODO: Don't use FirstSync in Sync, use custom written stuff instead. Don't add overhead.
 
 // Sync implements a filewatcher to the mdDir.
-func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) error {
+func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rndrConf *render.RenderConfig) error {
 	watcher, err := fswatcher.New(fswatcher.WithPath(mdDir), fswatcher.WithSeverity(fswatcher.SeverityInfo))
 	if err != nil {
 		return err
@@ -130,7 +131,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 					return s == path
 				})
 				prefixCut, _ := strings.CutPrefix(path, absMdDir)
-				targetDir := filepath.Join("assets", "pages", prefixCut)
+				targetDir := filepath.Join(paths.AssetsPath, "pages", prefixCut)
 				if err := os.RemoveAll(targetDir); err != nil {
 					logger.Error("Error while deleting directory recursively.", "error", err.Error())
 				}
@@ -140,7 +141,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 
 			suffixCut, _ := strings.CutSuffix(path, ".md")
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
-			err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+			err = deleteHTML(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
@@ -154,11 +155,11 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 					continue
 				}
 				prefixCut, _ := strings.CutPrefix(path, absMdDir)
-				targetDir := filepath.Join("assets", "pages", prefixCut)
+				targetDir := filepath.Join(paths.AssetsPath, "pages", prefixCut)
 				if err := os.RemoveAll(targetDir); err != nil {
 					logger.Error("Error while deleting directory recursively.", "error", err.Error())
 				} else {
-					err = FirstSync(mdDir, db)
+					err = FirstSync(mdDir, db, rndrConf)
 					if err != nil {
 						logger.Error("Sync->FirstSync error.", "error", err.Error())
 					}
@@ -167,12 +168,12 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 			}
 			suffixCut, _ := strings.CutSuffix(path, ".md")
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
-			err = deleteHTML(filepath.Join("assets", "pages", extensionSanitized+".html"))
+			err = deleteHTML(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
 			// my brain is fried, this should work tho for now.
-			FirstSync(mdDir, db)
+			FirstSync(mdDir, db, rndrConf)
 			if err != nil {
 				logger.Error("Sync->FirstSync error.", "error", err.Error())
 			}
@@ -192,11 +193,11 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 						}
 						dirs = append(dirs, path)
 						extensionSanitized, _ := strings.CutPrefix(path, absMdDir)
-						err = os.Mkdir(filepath.Join("assets", "pages", extensionSanitized), 0o755)
+						err = os.Mkdir(filepath.Join(paths.AssetsPath, "pages", extensionSanitized), 0o755)
 						if err != nil {
 							logger.Error("Mkdir failed", "error", err.Error())
 						}
-						err = FirstSync(mdDir, db)
+						err = FirstSync(mdDir, db, rndrConf)
 						if err != nil {
 							logger.Error("Sync->FirstSync error.", "error", err.Error())
 						}
@@ -221,8 +222,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger) er
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			if err := render.SaveMdtoHTML(
 				path,
-				filepath.Join("assets", "pages", extensionSanitized),
-			); err != nil {
+				filepath.Join(paths.AssetsPath, "pages", extensionSanitized), rndrConf); err != nil {
 				logger.Error("Render error", "error", err)
 			}
 		}

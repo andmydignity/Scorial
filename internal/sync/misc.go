@@ -9,14 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	paths "cms/internal"
 )
 
-const dbLocation = "databases"
+var dbLocation = paths.DBPath
 
 var ErrDidntExist = errors.New("didn't exist in the first place")
 
-func OpenDB() (*sql.DB, error) {
-	db, err := sql.Open("sqlite", filepath.Join(dbLocation, "checksum.db"))
+// dbName= name of the db INSIDE db folder, not the path
+func OpenDB(dbName string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", filepath.Join(dbLocation, dbName))
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +79,7 @@ func purgeNonExistent(db *sql.DB, fileNames []string, mdDir string) error {
 	}
 
 	// 2. Purge orphaned HTML files from assets/pages/
-	pagesDir := filepath.Join("assets", "pages")
+	pagesDir := filepath.Join(paths.AssetsPath, "pages")
 	err = filepath.WalkDir(pagesDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {

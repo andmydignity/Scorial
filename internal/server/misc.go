@@ -11,7 +11,10 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
+
+	paths "cms/internal"
 )
 
 func writePEM(path string, data []byte, perm os.FileMode) error {
@@ -118,8 +121,8 @@ func certSetup() (serverTLSConf *tls.Config, clientTLSConf *tls.Config, err erro
 	clientTLSConf = &tls.Config{
 		RootCAs: certpool,
 	}
-	writePEM("certs/selfsigned.pem", certPEM.Bytes(), 0o644)
-	writePEM("certs/selfsigned-key.pem", certPrivKeyPEM.Bytes(), 0o600)
+	writePEM(filepath.Join(paths.CertsPath, "selfsigned.pem"), certPEM.Bytes(), 0o644)
+	writePEM(filepath.Join(paths.CertsPath, "selfsigned-key.pem"), certPrivKeyPEM.Bytes(), 0o600)
 
 	return
 }

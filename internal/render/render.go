@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	paths "cms/internal"
 )
 
 // assets/templates
@@ -36,21 +38,21 @@ type dataStruct struct {
 	Script       string
 	SiteName     string
 	Year         int
-	TOC          []string
-	SidebarLinks []string
+	SideBarLinks []Link
 }
 
-func SaveMdtoHTML(loadFrom, saveTo string) error {
+func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig) error {
 	page, title, err := parseMdToHTML(loadFrom)
 	if err != nil {
 		return err
 	}
+	title += fmt.Sprintf(" | %v", rndrConf.SiteName)
 	fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
 	// WARN: Temp
-	data := dataStruct{title, template.HTML(page), fileName, fileName, "Semih", time.Now().Year(), nil, nil}
+	data := dataStruct{title, template.HTML(page), fileName, fileName, rndrConf.SiteName, time.Now().Year(), rndrConf.SidebarLinks}
 	if len(templateFiles) == 0 {
 		for _, fileName := range templates {
-			templateFiles = append(templateFiles, filepath.Join("assets", "templates", fileName))
+			templateFiles = append(templateFiles, filepath.Join(paths.AssetsPath, "templates", fileName))
 		}
 	}
 	// You pass base just by name, for some reason

@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
+	paths "cms/internal"
+	"cms/internal/render"
 	"cms/internal/sync"
 )
 
@@ -24,6 +27,7 @@ type CmsConfig struct {
 	CertFile  string
 	KeyFile   string
 	MDDir     string
+	SiteName  string
 }
 
 type CmsStruct struct {
@@ -41,18 +45,19 @@ func (cms *CmsStruct) Start() error {
 		ErrorLog:     slog.NewLogLogger(cms.Logger.Handler(), slog.LevelError),
 	}
 	shutdownErr := make(chan error)
-	checksumDB, err := sync.OpenDB()
+	checksumDB, err := sync.OpenDB("checksum.db")
 	if err != nil {
 		cms.Logger.Error("Couldn't open checksum database.")
 	}
 	defer checksumDB.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = sync.FirstSync(cms.Config.MDDir, checksumDB)
+	rdr := &render.RenderConfig{cms.Config.SiteName, nil}
+	err = sync.FirstSync(cms.Config.MDDir, checksumDB, rdr)
 	if err != nil {
 		return err
 	}
-	go sync.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger)
+	go sync.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger, rdr)
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
@@ -74,8 +79,8 @@ func (cms *CmsStruct) Start() error {
 				cms.Logger.Error("Error whilst generating self-signed certs", "error", err.Error())
 				os.Exit(2)
 			}
-			cms.Config.CertFile = "certs/selfsigned.pem"
-			cms.Config.KeyFile = "certs/selfsigned-key.pem"
+			cms.Config.CertFile = filepath.Join(paths.CertsPath, "selfsigned.pem")
+			cms.Config.KeyFile = filepath.Join(paths.CertsPath, "selfsigned-key.pem")
 		} else {
 			_, doesKeyexist := os.Stat(cms.Config.KeyFile)
 			_, doesCertExist := os.Stat(cms.Config.CertFile)
@@ -86,9 +91,8 @@ func (cms *CmsStruct) Start() error {
 					cms.Logger.Error("Error whilst generating self-signed certs", "error", err.Error())
 					os.Exit(2)
 				}
-				cms.Config.CertFile = "certs/selfsigned.pem"
-				cms.Config.KeyFile = "certs/selfsigned-key.pem"
-
+				cms.Config.CertFile = filepath.Join(paths.CertsPath, "selfsigned.pem")
+				cms.Config.KeyFile = filepath.Join(paths.CertsPath, "selfsigned-key.pem")
 			}
 		}
 		return srv.ListenAndServeTLS(cms.Config.CertFile, cms.Config.KeyFile)

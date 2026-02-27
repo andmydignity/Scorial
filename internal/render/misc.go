@@ -5,6 +5,16 @@ import (
 	"path/filepath"
 )
 
+type Link struct {
+	URL  string
+	name string
+}
+
+type RenderConfig struct {
+	SiteName     string
+	SidebarLinks []Link
+}
+
 func loadFromFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
