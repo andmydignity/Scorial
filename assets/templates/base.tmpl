@@ -23,6 +23,9 @@
   <div class="navbar">
     {{block "navbar" . }}{{end}}
   </div>
+  <div>
+    {{block "sidebar" .}}{{end}}
+  </div>
 
   <main class="content">
     {{block "content" . }}{{.Content}}{{end}}

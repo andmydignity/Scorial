@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // assets/templates
@@ -29,10 +30,14 @@ func RenderTemplates(base string, data any, tmpls []string) ([]byte, error) {
 }
 
 type dataStruct struct {
-	Title   string
-	Content template.HTML
-	Style   string
-	Script  string
+	Title        string
+	Content      template.HTML
+	Style        string
+	Script       string
+	SiteName     string
+	Year         int
+	TOC          []string
+	SidebarLinks []string
 }
 
 func SaveMdtoHTML(loadFrom, saveTo string) error {
@@ -41,7 +46,8 @@ func SaveMdtoHTML(loadFrom, saveTo string) error {
 		return err
 	}
 	fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
-	data := dataStruct{title, template.HTML(page), fileName, fileName}
+	// WARN: Temp
+	data := dataStruct{title, template.HTML(page), fileName, fileName, "Semih", time.Now().Year(), nil, nil}
 	if len(templateFiles) == 0 {
 		for _, fileName := range templates {
 			templateFiles = append(templateFiles, filepath.Join("assets", "templates", fileName))

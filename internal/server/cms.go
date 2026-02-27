@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"cms/internal/content"
+	"cms/internal/sync"
 )
 
 type CmsConfig struct {
@@ -41,18 +41,18 @@ func (cms *CmsStruct) Start() error {
 		ErrorLog:     slog.NewLogLogger(cms.Logger.Handler(), slog.LevelError),
 	}
 	shutdownErr := make(chan error)
-	checksumDB, err := content.OpenDB()
+	checksumDB, err := sync.OpenDB()
 	if err != nil {
 		cms.Logger.Error("Couldn't open checksum database.")
 	}
 	defer checksumDB.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = content.FirstSync(cms.Config.MDDir, checksumDB)
+	err = sync.FirstSync(cms.Config.MDDir, checksumDB)
 	if err != nil {
 		return err
 	}
-	go content.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger)
+	go sync.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger)
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)

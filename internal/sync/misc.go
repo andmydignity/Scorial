@@ -1,5 +1,5 @@
 // Package content
-package content
+package sync
 
 import (
 	"context"

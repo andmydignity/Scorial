@@ -62,7 +62,7 @@ func parseTitleFromMd(data []byte) (string, error) {
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "#") {
+		if strings.HasPrefix(line, "# ") {
 			return strings.TrimSpace(line[1:]), nil
 		}
 	}
