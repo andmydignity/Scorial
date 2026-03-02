@@ -11,8 +11,8 @@ import (
 
 func (cms *CmsStruct) routes() http.Handler {
 	router := httprouter.New()
-	router.HandlerFunc(http.MethodGet, "/", cms.homeHandler)
-	router.ServeFiles("/pages/*filepath", http.Dir(filepath.Join(paths.AssetsPath, "pages")))
+	router.GET("/", cms.homeHandler)
+	router.GET("/pages/*name", cms.pageHandler)
 	router.ServeFiles("/assets/style/*filepath", http.Dir(filepath.Join(paths.AssetsPath, "style")))
 	router.ServeFiles("/assets/media/*filepath", http.Dir(filepath.Join(paths.AssetsPath, "media")))
 

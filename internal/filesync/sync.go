@@ -1,4 +1,4 @@
-package sync
+package filesync
 
 import (
 	"context"
@@ -145,6 +145,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
+			deleteFromCache(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
 
 		}
 		// Could apply De Morgen, but short circutting gets removed.
@@ -172,6 +173,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
+			deleteFromCache(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
 			// my brain is fried, this should work tho for now.
 			FirstSync(mdDir, db, rndrConf)
 			if err != nil {

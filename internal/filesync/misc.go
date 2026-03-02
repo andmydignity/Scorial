@@ -1,5 +1,4 @@
-// Package content
-package sync
+package filesync
 
 import (
 	"context"

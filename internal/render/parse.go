@@ -10,39 +10,68 @@ import (
 	"unicode/utf8"
 
 	"github.com/adrg/frontmatter"
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
+	highlighting "github.com/yuin/goldmark-highlighting"
+	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
+	"go.abhg.dev/goldmark/toc"
 )
 
-var extensions = parser.CommonExtensions | parser.AutoHeadingIDs | parser.Footnotes | parser.SuperSubscript | parser.NoEmptyLineBeforeBlock | parser.DefinitionLists
+var mdParser = goldmark.New(
+	goldmark.WithExtensions(
+		extension.GFM, // Shorthand for Table, Strikethrough, TaskList, Linkify
+		extension.Footnote,
+		extension.DefinitionList,
+		extension.Typographer,
+		extension.CJK,
+		meta.Meta,
+		emoji.Emoji,
+		highlighting.NewHighlighting(
+			highlighting.WithGuessLanguage(true),
+		),
+		&toc.Extender{},
+	),
+	goldmark.WithParserOptions(
+		parser.WithAutoHeadingID(),
+		parser.WithAttribute(),
+	),
+	goldmark.WithRendererOptions(
+		html.WithUnsafe(),
+		html.WithXHTML(),
+	),
+)
 
-type meta struct {
-	layout   string `yaml:"layout"`
-	title    string `yaml:"title"`
-	category string `yaml:"category"`
+type ameta struct {
+	Layout   string `yaml:"layout"`
+	Title    string `yaml:"title"`
+	Category string `yaml:"category"`
 }
 
 var ErrFaultyUTF8 = errors.New("file has invalid utf8")
 
 func parseMdToHTML(loadFrom string) ([]byte, string, error) {
-	md, err := loadFromFile(loadFrom)
+	raw, err := loadFromFile(loadFrom)
 	if err != nil {
 		return nil, "", err
 	}
-	m := meta{}
-	body, err := frontmatter.Parse(bytes.NewReader(md), &m)
+
+	m := ameta{}
+	body, err := frontmatter.Parse(bytes.NewReader(raw), &m)
 	if err != nil {
 		return nil, "", err
 	}
-	p := parser.NewWithExtensions(extensions)
-	doc := p.Parse(body)
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank | html.LazyLoadImages | html.TOC | html.FootnoteReturnLinks
-	opts := html.RendererOptions{Flags: htmlFlags}
-	renderer := html.NewRenderer(opts)
-	rendered := markdown.Render(doc, renderer)
-	if m.title != "" {
-		return rendered, m.title, nil
+
+	var buf bytes.Buffer
+	if err := mdParser.Convert(body, &buf); err != nil {
+		return nil, "", err
+	}
+	rendered := buf.Bytes()
+
+	if m.Title != "" {
+		return rendered, m.Title, nil
 	}
 	title, err := parseTitleFromMd(body)
 	if errors.Is(err, ErrFaultyUTF8) {

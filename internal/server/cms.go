@@ -13,8 +13,8 @@ import (
 	"time"
 
 	paths "cms/internal"
+	"cms/internal/filesync"
 	"cms/internal/render"
-	"cms/internal/sync"
 )
 
 type CmsConfig struct {
@@ -45,7 +45,7 @@ func (cms *CmsStruct) Start() error {
 		ErrorLog:     slog.NewLogLogger(cms.Logger.Handler(), slog.LevelError),
 	}
 	shutdownErr := make(chan error)
-	checksumDB, err := sync.OpenDB("checksum.db")
+	checksumDB, err := filesync.OpenDB("checksum.db")
 	if err != nil {
 		cms.Logger.Error("Couldn't open checksum database.")
 	}
@@ -53,11 +53,11 @@ func (cms *CmsStruct) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	rdr := &render.RenderConfig{cms.Config.SiteName, nil}
-	err = sync.FirstSync(cms.Config.MDDir, checksumDB, rdr)
+	err = filesync.FirstSync(cms.Config.MDDir, checksumDB, rdr)
 	if err != nil {
 		return err
 	}
-	go sync.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger, rdr)
+	go filesync.Sync(ctx, checksumDB, cms.Config.MDDir, cms.Logger, rdr)
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
