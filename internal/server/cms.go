@@ -80,6 +80,10 @@ func (cms *CmsStruct) Start() error {
 	if cms.Config.HTTPSMode {
 		if cms.Config.Domains != nil && (cms.Config.CertFile == "" || cms.Config.KeyFile == "") {
 			certConf := certmagic.NewDefault()
+			// This is the missing piece — actually provisions/renews certs via ACME
+			if err := certConf.ManageAsync(ctx, cms.Config.Domains); err != nil {
+				return fmt.Errorf("failed to provision TLS certificates: %w", err)
+			}
 			tlsConfig := certConf.TLSConfig()
 			srv.TLSConfig = tlsConfig
 			return srv.ListenAndServeTLS("", "")
