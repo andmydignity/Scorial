@@ -20,12 +20,14 @@ func OpenDB(dbName string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS checksums (filename TEXT PRIMARY KEY,hash TEXT NOT NULL)`)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS checksums (filename TEXT PRIMARY KEY,hash TEXT NOT NULL)`)
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
-	return db, nil
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
+	return db, err
 }
 
 func deleteHTML(path string) error {
@@ -74,6 +76,15 @@ func purgeNonExistent(db *sql.DB, fileNames []string, mdDir string) error {
 		if err := deleteChecksum(db, file); err != nil {
 			return err
 		}
+		mdDirAbs, err := filepath.Abs(mdDir)
+		if err != nil {
+			return err
+		}
+		filename, _ := strings.CutPrefix(file, mdDirAbs)
+		filename, _ = strings.CutSuffix(filename, ".md")
+		if err = deleteFromPages(filename, db); err != nil {
+			return err
+		}
 	}
 
 	// 2. Purge orphaned HTML files from assets/pages/
@@ -102,10 +113,23 @@ func purgeNonExistent(db *sql.DB, fileNames []string, mdDir string) error {
 				if err := os.Remove(path); err != nil {
 					return err
 				}
+				filename, _ := strings.CutSuffix(mdRelPath, ".md")
+				if err = deleteFromPages(filename, db); err != nil {
+					return err
+				}
 			}
 		}
 		return nil
 	})
 
+	return err
+}
+
+func deleteFromPages(path string, db *sql.DB) error {
+	url, _ := strings.CutSuffix(filepath.Base(path), ".html")
+	url = "/pages/" + url
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
 	return err
 }

@@ -4,10 +4,11 @@ keyPath: ""
 mdPath: "mdFiles"
 siteName: "My Site"
 logoPath: ""
-iconPath: ""
+faviconPath: ""
 httpsMode: true
 ratelimit: false
 replenishment: 6.0
 burst: 30
-#If you add a single domain that points to this server, you can leave the cert and key path empty. It will get securely signed for you.
+#If you add domain(s) that points to this server, you can leave the cert and key path empty. Certmagic will get it for you.
+#For Certmagic to get TLS certs, port must be at 443
 #domains: []

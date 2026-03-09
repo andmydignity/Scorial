@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="color-scheme" content="light dark">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}}</title>
+  {{if .FaviconPath}}
+  <link rel="icon" type="image/x-icon" href={{.FaviconPath}}>
+  {{end}}
+
+  <link rel="stylesheet" href="/assets/style/common.css">
+  <script src="/assets/style/common.js"></script>
+  <style>
+    /* ── Home Page Layout ───────────────────────────────────────────────── */
+    .home-header {
+      margin-bottom: 2.5rem;
+    }
+
+    .home-header h1 {
+      margin-top: 0;
+      font-size: 2.5rem;
+      letter-spacing: -.03em;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      margin-top: 1.5rem;
+    }
+
+    .search-bar input {
+      width: 100%;
+      max-width: 450px;
+      padding: 0.75rem 1.15rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-alt);
+      color: var(--text);
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      transition: border-color var(--ease), box-shadow var(--ease);
+    }
+
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    /* Card Grid */
+    .page-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .page-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-decoration: none !important;
+      color: inherit;
+      transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease);
+    }
+
+    .page-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      border-color: var(--accent);
+    }
+
+    :root[data-theme="dark"] .page-card:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-image {
+      width: 100%;
+      height: 150px;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+    }
+
+    .card-content {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .card-content h2 {
+      font-size: 1.25rem;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      border-bottom: none;
+      padding-bottom: 0;
+      color: var(--text);
+      transition: color var(--ease);
+    }
+
+    .page-card:hover .card-content h2 {
+      color: var(--accent);
+    }
+
+    .card-content .overview {
+      font-size: 0.925rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+      flex-grow: 1;
+    }
+
+    .card-meta {
+      margin-top: auto;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      padding-top: 0.75rem;
+    }
+
+    .no-pages {
+      grid-column: 1 / -1;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      background: var(--bg-alt);
+      border-radius: var(--radius);
+      border: 1px dashed var(--border);
+    }
+  </style>
+  <script>
+    /* home.js — Specific behaviors for the home page */
+    (function () {
+      "use strict";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        var searchInput = document.getElementById("page-search");
+        var cards = document.querySelectorAll(".page-card");
+
+        if (!searchInput) return;
+
+        searchInput.addEventListener("input", function (e) {
+          var query = e.target.value.toLowerCase().trim();
+
+          cards.forEach(function (card) {
+            var title = card.querySelector("h2").textContent.toLowerCase();
+            var overview = card.querySelector(".overview").textContent.toLowerCase();
+
+            // Reveal card if query matches title or overview, else hide
+            if (title.includes(query) || overview.includes(query)) {
+              card.style.display = "flex";
+            } else {
+              card.style.display = "none";
+            }
+          });
+        });
+      });
+    })();
+  </script>
+  {{if .Style}}
+  <link rel="stylesheet" href="/assets/style/{{.Style}}.css">
+  {{end}}
+  {{if .Script}}
+  <script src="/assets/style/{{.Script}}.js"></script>
+  {{end}}
+</head>
+
+<body>
+  <div class="navbar">
+    {{block "navbar" .}}{{end}}
+  </div>
+
+  <div>
+    {{block "sidebar" .}}{{end}}
+  </div>
+
+  <main class="content">
+    {{block "content" .}}{{.Content}}{{end}}
+  </main>
+
+  <footer class="footer">
+    {{block "footer" .}}{{end}}
+  </footer>
+</body>
+
+</html>

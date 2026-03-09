@@ -21,9 +21,9 @@ type PageInfo struct {
 }
 
 type RenderConfig struct {
-	SiteName string
-	LogoPath string
-	IconPath string
+	SiteName    string
+	LogoPath    string
+	FaviconPath string
 }
 
 func loadFromFile(path string) ([]byte, error) {
@@ -123,6 +123,7 @@ func getPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 		if err != nil {
 			return nil, nil
 		}
+		page.ModifiedAt = strings.ReplaceAll(strings.ReplaceAll(page.ModifiedAt, "Z", ""), "T", " ")
 		pages = append(pages, page)
 	}
 	return pages, nil

@@ -1,0 +1,35 @@
+{{define "content"}}
+<div class="home-header">
+  <h1>{{if .SiteName}}{{.SiteName}}{{else}}Welcome{{end}}</h1>
+  <p>Explore our latest documentation and updates.</p>
+
+  <div class="search-bar">
+    <input type="text" id="page-search" placeholder="Search pages..." autocomplete="off" />
+  </div>
+</div>
+
+<div class="page-grid" id="page-grid">
+  {{range .Pages}}
+  <a href="{{.URL}}" class="page-card">
+    {{if .ImgPath}}
+    <div class="card-image">
+      <img src="{{.ImgPath}}" alt="{{.Title}}" loading="lazy">
+    </div>
+    {{end}}
+    <div class="card-content">
+      <h2>{{.Title}}</h2>
+      <p class="overview">{{.OverviewText}}</p>
+      <div class="card-meta">
+        <span class="date">Updated: {{.ModifiedAt}}</span>
+      </div>
+    </div>
+  </a>
+  {{end}}
+
+  {{if not .Pages}}
+  <div class="no-pages">
+    <p>No pages available yet.</p>
+  </div>
+  {{end}}
+</div>
+{{end}}

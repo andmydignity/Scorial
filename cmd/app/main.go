@@ -20,7 +20,7 @@ type config struct {
 	MdPath        string   `yaml:"mdPath"`
 	SiteName      string   `yaml:"siteName"`
 	LogoPath      string   `yaml:"logoPath"`
-	IconPath      string   `yaml:"iconPath"`
+	FaviconPath   string   `yaml:"faviconPath"`
 	HTTPSMode     bool     `yaml:"httpsMode"`
 	Ratelimit     bool     `yaml:"ratelimit"`
 	Replenishment float64  `yaml:"replenishment"`
@@ -42,10 +42,11 @@ func main() {
 		logger.Error("Error while parsing YAML config!", "error", err.Error())
 		os.Exit(3)
 	}
+
 	cmsConfig := server.CmsConfig{cfg.Port, struct {
 		Rps   float64
 		Burst int
-	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, cfg.IconPath, cfg.Domains}
+	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, cfg.FaviconPath, cfg.Domains}
 	cms := server.CmsStruct{logger, &cmsConfig}
 	err = cms.Start()
 	if !errors.Is(err, http.ErrServerClosed) && err != nil {

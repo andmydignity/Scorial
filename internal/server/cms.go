@@ -25,15 +25,15 @@ type CmsConfig struct {
 		Rps   float64
 		Burst int
 	}
-	HTTPSMode bool
-	Ratelimit bool
-	CertFile  string
-	KeyFile   string
-	MDDir     string
-	SiteName  string
-	LogoPath  string
-	IconPath  string
-	Domains   []string
+	HTTPSMode   bool
+	Ratelimit   bool
+	CertFile    string
+	KeyFile     string
+	MDDir       string
+	SiteName    string
+	LogoPath    string
+	FaviconPath string
+	Domains     []string
 }
 
 type CmsStruct struct {
@@ -58,7 +58,7 @@ func (cms *CmsStruct) Start() error {
 	defer checksumDB.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	rdr := &render.RenderConfig{cms.Config.SiteName, "", ""}
+	rdr := &render.RenderConfig{cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath}
 	err = filesync.FirstSync(cms.Config.MDDir, checksumDB, rdr)
 	if err != nil {
 		return err
@@ -79,7 +79,10 @@ func (cms *CmsStruct) Start() error {
 	cms.Logger.Info(fmt.Sprintf("Starting server at port %d", cms.Config.Port))
 	if cms.Config.HTTPSMode {
 		if cms.Config.Domains != nil && (cms.Config.CertFile == "" || cms.Config.KeyFile == "") {
-			certmagic.HTTPS(cms.Config.Domains, cms.routes(cms.Config.Ratelimit))
+			certConf := certmagic.NewDefault()
+			tlsConfig := certConf.TLSConfig()
+			srv.TLSConfig = tlsConfig
+			return srv.ListenAndServeTLS("", "")
 		} else if cms.Config.KeyFile == "" || cms.Config.CertFile == "" {
 			cms.Logger.Warn("HTTPS mode is on but no cert files are supplied. Using self-signed certs, which browsers will complain about.")
 			_, _, err := certSetup()

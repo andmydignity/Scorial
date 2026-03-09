@@ -121,6 +121,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 			continue
 		}
 		path := event.Path
+		prefixCut, _ := strings.CutPrefix(path, absMdDir)
 		if slices.Contains(types, fswatcher.EventRemove) {
 			if _, found := strings.CutSuffix(path, ".md"); !found {
 				if !slices.Contains(dirs, path) {
@@ -130,15 +131,13 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 				dirs = slices.DeleteFunc(dirs, func(s string) bool {
 					return s == path
 				})
-				prefixCut, _ := strings.CutPrefix(path, absMdDir)
+
 				targetDir := filepath.Join(paths.AssetsPath, "pages", prefixCut)
 				if err := os.RemoveAll(targetDir); err != nil {
 					logger.Error("Error while deleting directory recursively.", "error", err.Error())
 				}
 				continue
-
 			}
-
 			suffixCut, _ := strings.CutSuffix(path, ".md")
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			err = deleteHTML(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
@@ -146,7 +145,9 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
 			deleteFromCache(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
-
+			if err = deleteFromPages(prefixCut, db); err != nil {
+				return err
+			}
 		}
 		// Could apply De Morgen, but short circutting gets removed.
 		if slices.Contains(types, fswatcher.EventRename) && !(slices.Contains(types, fswatcher.EventCreate) || slices.Contains(types, fswatcher.EventMod)) {
@@ -174,6 +175,9 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
 			deleteFromCache(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
+			if err = deleteFromPages(extensionSanitized, db); err != nil {
+				return err
+			}
 			// my brain is fried, this should work tho for now.
 			FirstSync(mdDir, db, rndrConf)
 			if err != nil {

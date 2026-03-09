@@ -15,6 +15,7 @@ Tests: Not yet. (Should have done first...)
 ## Phase 2
 
 Add obsidian features: Not there
+RSS:Not there
 
 ## Phase 3
 

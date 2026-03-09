@@ -30,23 +30,24 @@ func RenderTemplates(base string, data any, tmpls []string) ([]byte, error) {
 }
 
 type dataStruct struct {
-	Title    string
-	Content  template.HTML
-	Style    string
-	Script   string
-	SiteName string
-	Year     int
+	Title       string
+	Content     template.HTML
+	Style       string
+	Script      string
+	SiteName    string
+	Year        int
+	FaviconPath string
 }
 
 type homeDataStruct struct {
-	Title    string
-	Style    string
-	Script   string
-	SiteName string
-	Year     int
-	Pages    []PageInfo
-	LogoPath string
-	IconPath string
+	Title       string
+	Style       string
+	Script      string
+	SiteName    string
+	Year        int
+	Pages       []PageInfo
+	LogoPath    string
+	FaviconPath string
 }
 
 func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) error {
@@ -70,8 +71,18 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 			templates = append(templates, filepath.Join(paths.AssetsPath, "templates", e.Name()))
 		}
 	}
+	_, err = os.Stat(filepath.Join(paths.AssetsPath, "sytle", fmt.Sprintf("%v.css", fileName)))
+	customCSS := ""
+	if err == nil {
+		customCSS = fileName
+	}
+	_, err = os.Stat(filepath.Join(paths.AssetsPath, "sytle", fmt.Sprintf("%v.js", fileName)))
+	customJS := ""
+	if err == nil {
+		customJS = fileName
+	}
 
-	data := dataStruct{title, template.HTML(page), fileName, fileName, rndrConf.SiteName, time.Now().Year()}
+	data := dataStruct{title, template.HTML(page), customCSS, customJS, rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath}
 	// You pass base just by name, for some reason
 	full, err := RenderTemplates("base.tmpl", &data, templates[:])
 	if err != nil {
@@ -79,11 +90,9 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 	}
 	if _, found := strings.CutSuffix(saveTo, ".html"); !found {
 		err = saveToFile(full, fmt.Sprintf("%v.html", saveTo))
+	} else {
+		err = saveToFile(full, saveTo)
 	}
-	if err != nil {
-		return err
-	}
-	err = saveToFile(full, saveTo)
 	if err != nil {
 		return err
 	}
@@ -98,7 +107,7 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 	if err != nil {
 		return err
 	}
-	homeConf := homeDataStruct{title, fileName, fileName, rndrConf.SiteName, time.Now().Year(), pages, rndrConf.LogoPath, rndrConf.IconPath}
+	homeConf := homeDataStruct{title, fileName, fileName, rndrConf.SiteName, time.Now().Year(), pages, rndrConf.LogoPath, rndrConf.FaviconPath}
 	return RenderHome(&homeConf)
 }
 
