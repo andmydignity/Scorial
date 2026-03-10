@@ -104,7 +104,7 @@ func overviewIMG(page []byte) string {
 	return imgSrc
 }
 
-func getPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
+func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 	pages := []PageInfo{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	paths "cms/internal"
 	"cms/internal/render"
@@ -146,7 +147,16 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 			}
 			deleteFromCache(filepath.Join(paths.AssetsPath, "pages", extensionSanitized+".html"))
 			if err = deleteFromPages(prefixCut, db); err != nil {
-				return err
+				logger.Error("Couldn't delete orphaned page from 'pages' table!", "error", err.Error())
+			}
+			pages, err := render.GetPages(25, db)
+			if err != nil {
+				logger.Error("Couldn't get pages!", "error", err.Error())
+			}
+
+			err = render.RenderHome(&render.HomeDataStruct{rndrConf.SiteName, "", "", rndrConf.SiteName, time.Now().Year(), pages, rndrConf.LogoPath, rndrConf.FaviconPath})
+			if err != nil {
+				logger.Error("Couldn't render home after markdown deletion.", "error", err.Error())
 			}
 		}
 		// Could apply De Morgen, but short circutting gets removed.
@@ -179,7 +189,7 @@ func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rn
 				return err
 			}
 			// my brain is fried, this should work tho for now.
-			FirstSync(mdDir, db, rndrConf)
+			err = FirstSync(mdDir, db, rndrConf)
 			if err != nil {
 				logger.Error("Sync->FirstSync error.", "error", err.Error())
 			}

@@ -37,9 +37,10 @@ type dataStruct struct {
 	SiteName    string
 	Year        int
 	FaviconPath string
+	LogoPath    string
 }
 
-type homeDataStruct struct {
+type HomeDataStruct struct {
 	Title       string
 	Style       string
 	Script      string
@@ -57,7 +58,11 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 	}
 	overviewText := getOverviewText(117, page) + "..."
 	overviewImg := overviewIMG(page)
-	url, _ := strings.CutSuffix(filepath.Base(saveTo), ".html")
+	rel, err := filepath.Rel(filepath.Join(paths.AssetsPath, "pages"), saveTo)
+	if err != nil {
+		return err
+	}
+	url, _ := strings.CutSuffix(rel, ".html")
 	url = "/pages/" + url
 	fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
 	entries, err := os.ReadDir(filepath.Join(paths.AssetsPath, "templates"))
@@ -82,7 +87,7 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 		customJS = fileName
 	}
 
-	data := dataStruct{title, template.HTML(page), customCSS, customJS, rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath}
+	data := dataStruct{title, template.HTML(page), customCSS, customJS, rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath, rndrConf.LogoPath}
 	// You pass base just by name, for some reason
 	full, err := RenderTemplates("base.tmpl", &data, templates[:])
 	if err != nil {
@@ -103,15 +108,15 @@ func SaveMdtoHTML(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) e
 	if err != nil {
 		return err
 	}
-	pages, err := getPages(25, db)
+	pages, err := GetPages(25, db)
 	if err != nil {
 		return err
 	}
-	homeConf := homeDataStruct{title, fileName, fileName, rndrConf.SiteName, time.Now().Year(), pages, rndrConf.LogoPath, rndrConf.FaviconPath}
+	homeConf := HomeDataStruct{rndrConf.SiteName, fileName, fileName, rndrConf.SiteName, time.Now().Year(), pages, rndrConf.LogoPath, rndrConf.FaviconPath}
 	return RenderHome(&homeConf)
 }
 
-func RenderHome(conf *homeDataStruct) error {
+func RenderHome(conf *HomeDataStruct) error {
 	entries, err := os.ReadDir(filepath.Join(paths.AssetsPath, "homePage", "templates"))
 	if err != nil {
 		return err
@@ -123,6 +128,7 @@ func RenderHome(conf *homeDataStruct) error {
 			templates = append(templates, filepath.Join(paths.AssetsPath, "homePage", "templates", e.Name()))
 		}
 	}
+
 	home, err := RenderTemplates("base.tmpl", conf, templates)
 	if err != nil {
 		return err

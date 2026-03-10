@@ -49,13 +49,34 @@
     }
 
     /* Card Grid */
+
     .page-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      /* Minimum of 2 entries in a row for smaller screens */
+      grid-template-columns: repeat(2, 1fr);
       gap: 1.5rem;
     }
 
-    .page-card {
+    /* Intermediate screens (tablets) */
+    @media (min-width: 600px) {
+      .page-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Larger screens (desktop) */
+    @media (min-width: 900px) {
+      .page-grid {
+        /* Up to 5 entries in a row */
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    .content {
+      max-width: 1200px;
+    }
+
+    . .page-card {
       display: flex;
       flex-direction: column;
       background: var(--surface);

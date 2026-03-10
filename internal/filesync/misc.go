@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -121,15 +122,58 @@ func purgeNonExistent(db *sql.DB, fileNames []string, mdDir string) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	err = purgeOrphanPages(mdDir, db)
 
 	return err
 }
 
 func deleteFromPages(path string, db *sql.DB) error {
-	url, _ := strings.CutSuffix(filepath.Base(path), ".html")
-	url = "/pages/" + url
+	trim, ok := strings.CutSuffix(path, ".md")
+	if !ok {
+		return nil
+	}
+
+	url := "/pages" + trim
+	fmt.Print(url)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err := db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
 	return err
+}
+
+func purgeOrphanPages(mdDir string, db *sql.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := db.QueryContext(ctx, "SELECT url FROM pages")
+	if err != nil {
+		return err
+	}
+	tbd := []string{}
+	for res.Next() {
+		var url string
+		err = res.Scan(&url)
+		if err != nil {
+			return err
+		}
+		path, ok := strings.CutPrefix(url, "/pages/")
+		if !ok {
+			return fmt.Errorf("filesync/misc.go:163 Invalid URL")
+		}
+		path = filepath.FromSlash(path)
+		path = filepath.Join(mdDir, path) + ".md"
+		_, err = os.Stat(path)
+		if err != nil {
+			tbd = append(tbd, url)
+		}
+	}
+	for _, url := range tbd {
+		_, err = db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

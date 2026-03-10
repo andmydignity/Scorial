@@ -8,7 +8,9 @@
     <line x1="2" y1="13.5" x2="16" y2="13.5" />
   </svg>
 </button>
-
+{{if .LogoPath }}
+<img src="{{.LogoPath}}" alt="logo of website" style="height: 18px;">
+{{end}}
 <a class="site-name" href="/">{{if .SiteName}}{{.SiteName}}{{else}}My<span>Site</span>{{end}}</a>
 
 <nav id="main-nav">
@@ -17,21 +19,6 @@
 
 {{/* Right-side controls — always visible */}}
 <div class="navbar-right">
-  {{/* Mobile nav hamburger — hidden on desktop via CSS */}}
-  <button id="nav-hamburger" class="nav-hamburger sidebar-toggle" aria-label="Toggle navigation" aria-expanded="false"
-    aria-controls="main-nav">
-    <svg class="icon-menu" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor"
-      stroke-width="1.75" stroke-linecap="round">
-      <line x1="2" y1="4.5" x2="16" y2="4.5" />
-      <line x1="2" y1="9" x2="16" y2="9" />
-      <line x1="2" y1="13.5" x2="16" y2="13.5" />
-    </svg>
-    <svg class="icon-close" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor"
-      stroke-width="1.75" stroke-linecap="round">
-      <line x1="3" y1="3" x2="15" y2="15" />
-      <line x1="15" y1="3" x2="3" y2="15" />
-    </svg>
-  </button>
 
   {{/* Dark / light mode toggle */}}
   <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">

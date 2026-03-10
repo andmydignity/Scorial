@@ -58,8 +58,17 @@ func (cms *CmsStruct) Start() error {
 	defer checksumDB.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	pages, err := render.GetPages(25, checksumDB)
+	if err != nil {
+		return err
+	}
 	rdr := &render.RenderConfig{cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath}
+	homeRdr := &render.HomeDataStruct{cms.Config.SiteName, "", "", cms.Config.SiteName, time.Now().Year(), pages, cms.Config.LogoPath, cms.Config.FaviconPath}
 	err = filesync.FirstSync(cms.Config.MDDir, checksumDB, rdr)
+	if err != nil {
+		return err
+	}
+	err = render.RenderHome(homeRdr)
 	if err != nil {
 		return err
 	}
