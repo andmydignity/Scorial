@@ -137,7 +137,6 @@ func deleteFromPages(path string, db *sql.DB) error {
 	}
 
 	url := "/pages" + trim
-	fmt.Print(url)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err := db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
