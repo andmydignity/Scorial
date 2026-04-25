@@ -4,6 +4,7 @@ go 1.25.7
 
 require (
 	github.com/adrg/frontmatter v0.2.0
+	github.com/andybalholm/brotli v1.2.1
 	github.com/caddyserver/certmagic v0.25.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/sgtdi/fswatcher v1.2.0
@@ -21,7 +22,6 @@ require (
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/caddyserver/zerossl v0.1.5 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

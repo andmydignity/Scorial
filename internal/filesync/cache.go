@@ -3,6 +3,8 @@ package filesync
 import (
 	"os"
 	"sync"
+
+	"cms/internal/globals"
 )
 
 type page struct {
@@ -13,7 +15,6 @@ type page struct {
 var (
 	pageCache  = map[string]page{}
 	mutexCache = sync.RWMutex{}
-	cacheSize  = 100
 	pageList   = []string{}
 )
 
@@ -56,7 +57,7 @@ func AppendToCache(path string) ([]byte, error) {
 
 func purgeCache() {
 	mutexCache.Lock()
-	for len(pageList) > cacheSize {
+	for len(pageList) > globals.LRUCacheSize {
 		delete(pageCache, pageList[0])
 		pageList = pageList[1:]
 	}

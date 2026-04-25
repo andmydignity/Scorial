@@ -30,6 +30,7 @@ type config struct {
 	Replenishment float64  `yaml:"replenishment"`
 	Burst         int      `yaml:"burst"`
 	Domains       []string `yaml:"domains"`
+	LRUSize       int      `yaml:"lruSize"`
 }
 
 func OpenDB(dbName string) (*sql.DB, error) {
@@ -51,19 +52,13 @@ func OpenDB(dbName string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT , category TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
 	return db, err
 }
 
 func main() {
 	globals.SetPaths()
-
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	db, err := OpenDB("database.db")
-	if err != nil {
-		logger.Error("Couldn't open DB! Error:" + err.Error())
-		os.Exit(3)
-	}
 	file, err := os.Open(filepath.Join(globals.BinaryPath, "config.yaml"))
 	if err != nil {
 		logger.Error("Couldn't access config.yaml file!", "error", err.Error())
@@ -75,11 +70,21 @@ func main() {
 		logger.Error("Error while parsing YAML config!", "error", err.Error())
 		os.Exit(3)
 	}
+	if cfg.LRUSize <= 0 {
+		logger.Error("Max LRU Cache size has to be more than 0.")
+		os.Exit(4)
+	}
+	db, err := OpenDB("database.db")
+	if err != nil {
+		logger.Error("Couldn't open DB! Error:" + err.Error())
+		os.Exit(3)
+	}
 
 	cmsConfig := server.CmsConfig{cfg.Port, cfg.CardsInHome, struct {
 		Rps   float64
 		Burst int
 	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, cfg.FaviconPath, cfg.Domains}
+	globals.LRUCacheSize = cfg.LRUSize
 	cms := server.CmsStruct{logger, &cmsConfig, db}
 	err = cms.Start()
 	if !errors.Is(err, http.ErrServerClosed) && err != nil {

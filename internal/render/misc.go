@@ -25,6 +25,7 @@ type PageInfo struct {
 	Title        string
 	ImgPath      string
 	OverviewText string
+	Category     string
 }
 
 type RenderConfig struct {
@@ -131,17 +132,16 @@ func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 1. Let SQLite handle the sorting and the counting using ORDER BY and LIMIT
-	query := "SELECT url, title, overview, overviewImg, modifiedAt FROM pages ORDER BY modifiedAt DESC LIMIT ?"
+	query := "SELECT url, title, overview, overviewImg, category ,modifiedAt FROM pages ORDER BY modifiedAt DESC LIMIT ?"
 	res, err := db.QueryContext(ctx, query, numberOf)
 	if err != nil {
-		return nil, err // Return the actual error instead of nil, nil
+		return nil, err
 	}
-	defer res.Close() // CRITICAL: This prevents database locks and memory leaks
+	defer res.Close()
 
 	for res.Next() {
 		var page PageInfo
-		err = res.Scan(&page.URL, &page.Title, &page.OverviewText, &page.ImgPath, &page.ModifiedAt)
+		err = res.Scan(&page.URL, &page.Title, &page.OverviewText, &page.ImgPath, &page.Category, &page.ModifiedAt)
 		if err != nil {
 			return nil, err
 		}

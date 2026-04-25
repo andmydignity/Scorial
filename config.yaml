@@ -1,3 +1,8 @@
+# Important suggestion for Cloudflare users or any other DNS/CDN which caches pages:
+# To reduce the network/system load even more (by a massive amount), consider enabling page caching "/pages/*" and "/" (no *, just the homepage) in the dashboard.
+# Enable "Respect strong ETags" in cache rules if you are going to enable page caching.
+# DEFINETLY do these if you are running this in a cheap VPS and/or have low-bandwith.
+
 port: 8080
 #How many recent pages to show on the home page when the page loads.
 cardsInHome: 20
@@ -11,6 +16,12 @@ mdPath: "mdFiles"
 siteName: "My Site"
 logoPath: ""
 faviconPath: ""
+
+#LRU size: up to how many pages should Least Recently Used cache hold.
+#Increasing this increases performance especially if you have a lot of pages. But it also increases RAM usage.
+#You can assume increasing by 1 increases the max RAM usage by around 10KB for text-heavy articles or around 4KB for basic pages.
+lruSize: 200
+
 httpsMode: true
 #To implement a ratelimit or not. You will probably not need it as Cloudflare/your DNS will take care of that for you.
 ratelimit: false

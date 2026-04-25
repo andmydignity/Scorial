@@ -45,43 +45,61 @@ var mdParser = goldmark.New(
 )
 
 type ameta struct {
-	Layout   string `yaml:"layout"`
-	Title    string `yaml:"title"`
-	Category string `yaml:"category"`
+	Layout   string   `yaml:"layout"`
+	Title    string   `yaml:"title"`
+	Category string   `yaml:"category"`
+	Tags     []string `yaml:"tags"`
+	Draft    bool     `yaml:"draft"`
 }
 
-var ErrFaultyUTF8 = errors.New("file has invalid utf8")
+var (
+	ErrFaultyUTF8 = errors.New("file has invalid utf8")
+	ErrIsDraft    = errors.New(".md file is a draft.")
+)
 
-func parseMdToHTML(loadFrom string) ([]byte, string, error) {
+func parseMdToHTML(loadFrom string) (data []byte, title string, category_ string, err error) {
 	raw, err := loadFromFile(loadFrom)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 
 	m := ameta{}
 	body, err := frontmatter.Parse(bytes.NewReader(raw), &m)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
+	}
+	if m.Draft {
+		return nil, "", "", ErrIsDraft
+	}
+	var category string
+	if m.Category == "" {
+		if len(m.Tags) == 0 || m.Tags == nil {
+			category = ""
+		} else {
+			category = m.Tags[0]
+		}
+	} else {
+		category = m.Category
 	}
 
 	var buf bytes.Buffer
 	if err := mdParser.Convert(body, &buf); err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	rendered := buf.Bytes()
 
 	if m.Title != "" {
-		return rendered, m.Title, nil
+		return rendered, m.Title, category, nil
 	}
-	title, err := parseTitleFromMd(body)
+	title, err = parseTitleFromMd(body)
 	if errors.Is(err, ErrFaultyUTF8) {
-		return rendered, "", ErrFaultyUTF8
+		return rendered, "", category, ErrFaultyUTF8
 	}
 	if err != nil {
 		fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
-		return rendered, fileName, nil
+		return rendered, fileName, category, nil
 	}
-	return rendered, title, nil
+	return rendered, title, category, nil
 }
 
 func parseTitleFromMd(data []byte) (string, error) {

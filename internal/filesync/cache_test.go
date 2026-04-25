@@ -3,10 +3,13 @@ package filesync
 import (
 	"os"
 	"testing"
+
+	"cms/internal/globals"
 )
 
 func TestAppendToCacheAndFromCache(t *testing.T) {
 	tmpfile, err := os.CreateTemp("", "cachetest")
+	globals.LRUCacheSize = 200
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +36,7 @@ func TestAppendToCacheAndFromCache(t *testing.T) {
 
 func TestCacheEviction(t *testing.T) {
 	// Set cacheSize to a small number for testing
-	cacheSize = 2
+	globals.LRUCacheSize = 2
 	pageCache = map[string]page{}
 	pageList = []string{}
 

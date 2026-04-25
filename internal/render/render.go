@@ -4,6 +4,7 @@ package render
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -42,9 +43,12 @@ type DataStruct struct {
 }
 
 func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) error {
-	page, title, err := parseMdToHTML(loadFrom)
+	page, title, category, err := parseMdToHTML(loadFrom)
 	if err != nil {
-		return err
+		if errors.Is(err, ErrIsDraft) {
+			// Don't do anything for a draft files.
+			return nil
+		}
 	}
 	overviewText := getOverviewText(117, page) + "..."
 	overviewImg := overviewIMG(page)
@@ -96,8 +100,8 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) er
 		return err
 	}
 	_, err = db.Exec(
-		"INSERT INTO pages (url, title, overview, overviewImg) VALUES (?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET title=excluded.title, overview=excluded.overview, overviewImg=excluded.overviewImg",
-		url, title, overviewText, overviewImg,
+		"INSERT INTO pages (url, title, overview, overviewImg, category) VALUES (?, ?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET title=excluded.title, overview=excluded.overview, overviewImg=excluded.overviewImg",
+		url, title, overviewText, overviewImg, category,
 	)
 	if err != nil {
 		return err

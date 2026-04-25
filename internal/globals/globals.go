@@ -8,6 +8,7 @@ import (
 
 var (
 	AssetsPath, CertsPath, DBPath, BinaryPath string
+	LRUCacheSize                              int
 	HomePageCache                             []byte
 	HomePageChecksumCache                     string
 )

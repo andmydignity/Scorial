@@ -37,9 +37,9 @@ func (cms *CmsStruct) headersMiddleware(next httprouter.Handle) httprouter.Handl
 			}
 			h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 		}
-
+		// Etags are handled by handlers.
 		h.Set("Content-Encoding", "br")
-		h.Set("Cache-Control", "public, max-age=0, must-revalidate")
+		h.Set("Cache-Control", "public, no-cache, no-transform, must-revalidate, s-maxage=0")
 		h.Set("Content-Type", "text/html; charset=utf-8")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")

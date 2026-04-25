@@ -2,18 +2,20 @@
 <div class="home-header">
   <h1>{{if .SiteName}}{{.SiteName}}{{else}}Welcome{{end}}</h1>
   <p>Explore our latest documentation and updates.</p>
-
-  <div class="search-bar">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round"
-         aria-hidden="true">
-      <circle cx="11" cy="11" r="8"/>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  <div class="search-controls">
+  <div class="search-bar" style="margin-top: 0; flex-grow: 1;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
-    <input type="text" id="page-search" placeholder="Search across all pages..." autocomplete="off" />
+    <input type="text" id="page-search" placeholder="Search pages..." autocomplete="off">
   </div>
-</div>
+  
+  <select id="category-filter" class="category-filter">
+    <option value="">All Categories</option>
+    </select>
+  </div>
+  </div>
 
 <div id="latest-posts">
   <div class="page-grid">
@@ -23,6 +25,9 @@
       <div class="card-image">
         <img src="{{.ImgPath}}" alt="{{.Title}}" loading="lazy">
       </div>
+      {{end}}
+      {{if .Category}}
+      <span class="card-category">{{.Category}}</span>
       {{end}}
       <div class="card-content">
         <h2>{{.Title}}</h2>
@@ -43,15 +48,12 @@
 </div>
 
 <div id="search-results-container" style="display: none;">
-  <p class="search-status" id="search-status" aria-live="polite"></p>
+<h2 id="search-status" class="search-status"></h2>
   
-  <div class="page-grid" id="page-grid">
-    </div>
-
-  <div class="no-results" id="no-results" style="display:none;">
-    <p>No pages match your search.</p>
-  </div>
-
+  <div id="page-grid" class="page-grid"></div>
+  
+  <div id="no-results" class="no-results" style="display: none;">No pages found.</div>
+  
   <div id="search-sentinel"></div>
 </div>
 {{end}}

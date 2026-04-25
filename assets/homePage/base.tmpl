@@ -4,6 +4,10 @@
 <head>
   <meta name="color-scheme" content="light dark">
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{.Title}}</title>
   {{if .FaviconPath}}
@@ -186,8 +190,50 @@
       border-radius: var(--radius);
       border: 1px dashed var(--border);
     }
-  </style>
+    /* Category Tag */
+    .card-category {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+      width: fit-content;
+    }
 
+    /* Search Controls Layout */
+    .search-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* Category Dropdown */
+    .category-filter {
+      padding: 0.75rem 1.15rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-alt);
+      color: var(--text);
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      transition: border-color var(--ease), box-shadow var(--ease);
+      cursor: pointer;
+      appearance: none; /* Removes default OS styling */
+      min-width: 150px;
+    }
+
+    .category-filter:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+  </style>
   <script>
     (function () {
       "use strict";
@@ -195,19 +241,21 @@
       const MIN_CHARS = 3;
       const BATCH_SIZE = 20;
 
-      // 1. Inject JSON array of ALL pages for instant searching
+      // 1. Inject JSON array with Category
       const allPages = [
         {{range .AllPages}}{
           url: {{.URL}},
           title: {{.Title}},
           img: {{.ImgPath}},
           overview: {{.OverviewText}},
+          category: {{.Category}},
           date: {{.ModifiedAt}}
         },{{end}}
       ];
 
       document.addEventListener("DOMContentLoaded", function () {
         const input = document.getElementById("page-search");
+        const catFilter = document.getElementById("category-filter");
         const latestPostsContainer = document.getElementById("latest-posts");
         const searchResultsContainer = document.getElementById("search-results-container");
         const grid = document.getElementById("page-grid");
@@ -220,12 +268,27 @@
         let filteredPages = [];
         let currentIndex = 0;
 
+        // Populate Category Dropdown Dynamically
+        if (catFilter) {
+          // Extract unique categories, remove empty ones, and sort alphabetically
+          const categories = [...new Set(allPages.map(p => p.category).filter(Boolean))].sort();
+          categories.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.toLowerCase();
+            opt.textContent = c;
+            catFilter.appendChild(opt);
+          });
+        }
+
         const renderCard = (p) => {
           const imgHtml = p.img ? `<div class="card-image"><img src="${p.img}" alt="${p.title}" loading="lazy"></div>` : '';
+          const catHtml = p.category ? `<span class="card-category">${p.category}</span>` : '';
+          
           return `
             <a href="${p.url}" class="page-card">
               ${imgHtml}
               <div class="card-content">
+                ${catHtml}
                 <h2>${p.title}</h2>
                 <p class="overview">${p.overview}</p>
                 <div class="card-meta">
@@ -245,7 +308,6 @@
             temp.innerHTML = renderCard(p);
             fragment.appendChild(temp.firstElementChild);
           });
-          
           grid.appendChild(fragment);
           currentIndex += nextBatch.length;
         };
@@ -255,15 +317,16 @@
             loadNextBatch();
           }
         }, { rootMargin: '200px' });
-
         if (sentinel) observer.observe(sentinel);
 
-        input.addEventListener("input", function (e) {
-          const raw = e.target.value;
+        // Unified Filtering Logic
+        const applyFilters = () => {
+          const raw = input.value;
           const query = raw.toLowerCase().trim();
+          const selectedCat = catFilter ? catFilter.value.toLowerCase() : "";
 
-          // 2. Revert to Static View if query is too short
-          if (query.length < MIN_CHARS) {
+          // Revert to Static View if query is too short AND no category is selected
+          if (query.length < MIN_CHARS && selectedCat === "") {
             latestPostsContainer.style.display = "block";
             searchResultsContainer.style.display = "none";
             grid.innerHTML = '';
@@ -271,19 +334,20 @@
             return;
           }
 
-          // 3. Switch to Dynamic View
+          // Switch to Dynamic View
           latestPostsContainer.style.display = "none";
           searchResultsContainer.style.display = "block";
 
-          filteredPages = allPages.filter(p => 
-            p.title.toLowerCase().includes(query) || 
-            p.overview.toLowerCase().includes(query)
-          );
+          filteredPages = allPages.filter(p => {
+            const matchesText = query === "" || p.title.toLowerCase().includes(query) || p.overview.toLowerCase().includes(query);
+            const matchesCat = selectedCat === "" || (p.category && p.category.toLowerCase() === selectedCat);
+            return matchesText && matchesCat;
+          });
 
           currentIndex = 0;
           grid.innerHTML = '';
 
-          // 4. Handle Results state
+          // Handle Results state
           if (filteredPages.length === 0) {
             noResults.style.display = "block";
             sentinel.style.display = "none";
@@ -292,14 +356,20 @@
             noResults.style.display = "none";
             sentinel.style.display = "block";
             loadNextBatch();
-            status.textContent = `${filteredPages.length} ${filteredPages.length === 1 ? 'result' : 'results'} for '${raw.trim()}'`;
+            
+            let statStr = `${filteredPages.length} ${filteredPages.length === 1 ? 'result' : 'results'}`;
+            if (query) statStr += ` for '${raw.trim()}'`;
+            if (selectedCat) statStr += ` in '${catFilter.options[catFilter.selectedIndex].text}'`;
+            status.textContent = statStr;
           }
-        });
+        };
+
+        input.addEventListener("input", applyFilters);
+        if (catFilter) catFilter.addEventListener("change", applyFilters);
       });
     })();
   </script>
-
-  {{if .Style}}
+   {{if .Style}}
   <link rel="stylesheet" href="/assets/style/{{.Style}}.css">
   {{end}}
   {{if .Script}}
