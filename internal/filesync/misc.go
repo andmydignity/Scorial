@@ -133,10 +133,7 @@ func purgeOrphanedHTMLs(pagesDir, mdDir string, set *map[string]struct{}, db *sq
 }
 
 func deleteFromPages(path string, db *sql.DB) error {
-	trim, ok := strings.CutSuffix(path, ".md")
-	if !ok {
-		return nil
-	}
+	trim := strings.TrimSuffix(path, ".md")
 
 	url := "/pages" + trim
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -152,7 +149,9 @@ func purgeOrphanPages(mdDir string, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
+	defer res.Close()
 	tbd := []string{}
+
 	for res.Next() {
 		var url string
 		err = res.Scan(&url)

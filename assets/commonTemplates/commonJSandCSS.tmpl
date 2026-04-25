@@ -3,21 +3,21 @@
 <style>
 /* ── Light tokens ───────────────────────────────────────────────────── */
 :root {
-  --font-serif: "Literata", Georgia, serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-serif: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", monospace;
 
-  --bg: #f8f6f2;
-  --bg-alt: #f0ede6;
+  --bg: #f4f4f5;
+  --bg-alt: #e4e4e7;
   --surface: #ffffff;
-  --border: #e0dbd2;
-  --text: #1c1a17;
-  --text-muted: #706b62;
-  --accent: #3d6fa8;
-  --accent-dim: #dde8f5;
-  --link: #3d6fa8;
-  --link-vis: #5a4a8a;
-  --code-bg: #f0ede6;
-  --shadow-nav: 0 1px 0 var(--border), 0 2px 12px rgba(0, 0, 0, .06);
+  --border: #d4d4d8;
+  --text: #09090b;
+  --text-muted: #52525b;
+  --accent: #27272a;
+  --accent-dim: #f4f4f5;
+  --link: #3b82f6;
+  --link-vis: #6366f1;
+  --code-bg: #f4f4f5;
+  --shadow-nav: 0 1px 0 var(--border), 0 2px 12px rgba(0, 0, 0, .04);
 
   --sidebar-w: 260px;
   --nav-h: 52px;
@@ -27,18 +27,18 @@
 
 /* ── Dark tokens ────────────────────────────────────────────────────── */
 :root[data-theme="dark"] {
-  --bg: #1a1b1e;
-  --bg-alt: #212226;
-  --surface: #26282d;
-  --border: #33363d;
-  --text: #d8dae0;
-  --text-muted: #8a8d96;
-  --accent: #6a9fd4;
-  --accent-dim: #1a2a3a;
-  --link: #6a9fd4;
-  --link-vis: #a98fd4;
-  --code-bg: #1e2024;
-  --shadow-nav: 0 1px 0 var(--border), 0 2px 12px rgba(0, 0, 0, .3);
+  --bg: #151515;
+  --bg-alt: #222222;
+  --surface: #1f1f1f;
+  --border: #333333;
+  --text: #eaeaea;
+  --text-muted: #a1a1aa;
+  --accent: #e4e4e7;
+  --accent-dim: #2d2d2d;
+  --link: #60a5fa;
+  --link-vis: #818cf8;
+  --code-bg: #1a1a1a;
+  --shadow-nav: 0 1px 0 var(--border), 0 4px 12px rgba(0, 0, 0, .3);
 }
 
 /* ── Reset ──────────────────────────────────────────────────────────── */
@@ -355,6 +355,7 @@ body.sidebar-hidden .sidebar {
 
 .content p {
   margin-bottom: 1rem;
+  max-width: 70ch;
 }
 
 .content a {
@@ -377,6 +378,7 @@ body.sidebar-hidden .sidebar {
 .content ol {
   padding-left: 1.4rem;
   margin-bottom: 1rem;
+  max-width: 70ch;
 }
 
 .content li {
@@ -417,6 +419,7 @@ body.sidebar-hidden .sidebar {
   margin-bottom: 1.2rem;
   scrollbar-width: thin;
   transition: background var(--ease), border-color var(--ease);
+  position: relative;
 }
 
 .content pre code {
@@ -437,6 +440,83 @@ body.sidebar-hidden .sidebar {
   border: 1px solid var(--border);
   display: block;
   margin: 1rem 0;
+  cursor: zoom-in;
+}
+
+/* ── Custom JS Features ──────────────────────────────────────────────── */
+
+.reading-progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--link);
+  z-index: 9999;
+  width: 0%;
+  pointer-events: none;
+}
+
+.read-time-meta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  display: block;
+}
+
+.copy-code-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--ease), color var(--ease), background var(--ease);
+  z-index: 10;
+}
+
+.content pre:hover .copy-code-btn {
+  opacity: 1;
+}
+
+.copy-code-btn:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.lightbox-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: zoom-out;
+  padding: 2rem;
+}
+
+.lightbox-overlay.active {
+  opacity: 1;
+}
+
+.lightbox-overlay img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.lightbox-overlay.active img {
+  transform: scale(1);
 }
 
 .content table {
@@ -639,6 +719,78 @@ button {
   touch-action: manipulation;
 }
 
+/* ── Skip Link ──────────────────────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -60px;
+  left: 0;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 8px 16px;
+  z-index: 9999;
+  transition: top var(--ease);
+  text-decoration: none;
+  font-weight: bold;
+}
+.skip-link:focus { top: 0; }
+
+/* ── Anchor Links ───────────────────────────────────────────────────── */
+.anchor-link {
+  opacity: 0;
+  margin-left: 0.5em;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: normal;
+  font-size: 0.85em;
+  transition: opacity var(--ease), color var(--ease);
+}
+.content h2:hover .anchor-link,
+.content h3:hover .anchor-link,
+.content h4:hover .anchor-link,
+.anchor-link:focus { opacity: 1; }
+.anchor-link:hover { color: var(--accent); cursor: pointer; }
+
+/* ── Back To Top ────────────────────────────────────────────────────── */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex; justify-content: center; align-items: center;
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0; visibility: hidden;
+  transition: all var(--ease);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+:root[data-theme="dark"] .back-to-top { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.back-to-top.visible { opacity: 1; visibility: visible; }
+.back-to-top:hover { 
+  background: var(--surface); 
+  color: var(--text); 
+  transform: translateY(-3px); 
+}
+
+/* ── Print Stylesheet ───────────────────────────────────────────────── */
+@media print {
+  .navbar, .sidebar-wrap, .footer, .reading-progress-bar, .back-to-top, .copy-code-btn, .sidebar-toggle, .theme-toggle, .skip-link {
+    display: none !important;
+  }
+  body, .content {
+    background: white !important;
+    color: black !important;
+    display: block;
+    margin: 0; padding: 0;
+  }
+  .content p, .content ul, .content ol { max-width: none; }
+  a { text-decoration: none; color: black; }
+  pre, blockquote { border: 1px solid #ccc; page-break-inside: avoid; }
+}
+
 </style>
 {{end}}
 {{define "commonJS"}}
@@ -824,6 +976,95 @@ button {
     return ul;
   }
 
+  /* ── Markdown Abbreviations Polyfill ───────────────────────── */
+  function processAbbreviations() {
+    var content = document.querySelector(".content");
+    if (!content) return;
+
+    var walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    var abbrMap = {};
+    var nodesToRemove = [];
+
+    while ((node = walker.nextNode())) {
+      var text = node.nodeValue;
+      var match;
+      var foundDef = false;
+
+      var localRegex = /^\*\[([^\]]+)\]:\s*(.+)$/gm;
+      while ((match = localRegex.exec(text)) !== null) {
+        abbrMap[match[1]] = match[2];
+        foundDef = true;
+      }
+
+      if (foundDef) {
+        node.nodeValue = text.replace(/^\*\[([^\]]+)\]:\s*(.+)$/gm, '').trim();
+        if (node.nodeValue === '') {
+          nodesToRemove.push(node);
+        }
+      }
+    }
+
+    nodesToRemove.forEach(function(n) {
+      if (n && n.parentNode) {
+        var p = n.parentNode;
+        n.remove();
+        if (p && p.textContent.trim() === '' && p.tagName === 'P') {
+          p.remove();
+        }
+      }
+    });
+
+    var abbrKeys = Object.keys(abbrMap);
+    if (abbrKeys.length === 0) return;
+
+    walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, null, false);
+    var textNodes = [];
+    while ((node = walker.nextNode())) {
+       var parent = node.parentNode;
+       if (parent && (parent.tagName === 'ABBR' || parent.tagName === 'CODE' || parent.tagName === 'PRE')) continue;
+       textNodes.push(node);
+    }
+
+    abbrKeys.sort(function(a, b) { return b.length - a.length; });
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    var replacementRegex = new RegExp('\\b(' + abbrKeys.map(escapeRegExp).join('|') + ')\\b', 'g');
+
+    textNodes.forEach(function(node) {
+      if (!replacementRegex.test(node.nodeValue)) return;
+      
+      var frag = document.createDocumentFragment();
+      var lastIndex = 0;
+      replacementRegex.lastIndex = 0;
+      var match;
+
+      while ((match = replacementRegex.exec(node.nodeValue)) !== null) {
+        var before = node.nodeValue.substring(lastIndex, match.index);
+        if (before) frag.appendChild(document.createTextNode(before));
+
+        var abbrElement = document.createElement('abbr');
+        abbrElement.title = abbrMap[match[1]];
+        abbrElement.textContent = match[1];
+        abbrElement.style.borderBottom = '1px dotted var(--text-muted)';
+        abbrElement.style.textDecoration = 'none';
+        abbrElement.style.cursor = 'help';
+        frag.appendChild(abbrElement);
+
+        lastIndex = replacementRegex.lastIndex;
+      }
+      var after = node.nodeValue.substring(lastIndex);
+      if (after) frag.appendChild(document.createTextNode(after));
+
+      if (node.parentNode) {
+        node.parentNode.replaceChild(frag, node);
+      }
+    });
+  }
+
   /* ── Scrollspy ──────────────────────────────────────────────────────── */
   function initScrollspy() {
     var headings = Array.from(
@@ -924,6 +1165,132 @@ button {
       });
   }
 
+  /* ── Extra JS Features ──────────────────────────────────────────────── */
+  function initCopyBlock() {
+    document.querySelectorAll(".content pre").forEach(function(pre) {
+      if (pre.querySelector(".copy-code-btn")) return;
+      var btn = document.createElement("button");
+      btn.className = "copy-code-btn";
+      btn.textContent = "Copy";
+      
+      btn.addEventListener("click", function() {
+        var code = pre.querySelector("code");
+        if (!code) return;
+        var text = code.innerText || code.textContent;
+        navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = "Copied!";
+          setTimeout(function() { btn.textContent = "Copy"; }, 2000);
+        });
+      });
+      
+      pre.appendChild(btn);
+    });
+  }
+
+  function initLightbox() {
+    var overlay = document.createElement("div");
+    overlay.className = "lightbox-overlay";
+    var imgClone = document.createElement("img");
+    overlay.appendChild(imgClone);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", function() {
+      overlay.classList.remove("active");
+      setTimeout(function() { overlay.style.display = "none"; }, 300);
+    });
+
+    document.querySelectorAll(".content img").forEach(function(img) {
+      // Ignore if image is an icon or too small
+      if (img.width > 0 && img.width < 100) return;
+      
+      img.addEventListener("click", function(e) {
+        if (!e.target.closest("a")) {
+          imgClone.src = img.src;
+          overlay.style.display = "flex";
+          // Trigger reflow for transition
+          overlay.offsetWidth; 
+          overlay.classList.add("active");
+        }
+      });
+    });
+  }
+
+  function initReadingProgress() {
+    var content = document.querySelector(".content");
+    if (!content) return;
+    
+    // Time to read estimation
+    var textContent = content.textContent || content.innerText;
+    var words = textContent.trim().split(/\s+/).length;
+    var rawMinutes = words / 200; // 200 WPM rate
+    var minutes = Math.max(1, Math.ceil(rawMinutes));
+    
+    // Only inject on likely article pages (not the home page indexing)
+    if (!document.querySelector(".home-header")) {
+       var meta = document.createElement("span");
+       meta.className = "read-time-meta";
+       meta.innerText = "Estimated reading time: " + minutes + " min(s)";
+       
+       var h1 = content.querySelector("h1");
+       if (h1 && h1.nextSibling) {
+          h1.parentNode.insertBefore(meta, h1.nextSibling);
+       } else {
+          content.insertBefore(meta, content.firstChild);
+       }
+       
+       // Inject Top Progress Bar
+       var progressBar = document.createElement("div");
+       progressBar.className = "reading-progress-bar";
+       document.body.appendChild(progressBar);
+       
+       window.addEventListener("scroll", function() {
+         var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+         var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+         var scrolled = (winScroll / height) * 100;
+         progressBar.style.width = scrolled + "%";
+       }, { passive: true });
+    }
+  }
+
+  function initBackToTop() {
+    var btn = document.createElement("button");
+    btn.className = "back-to-top";
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>';
+    btn.setAttribute("aria-label", "Back to top");
+    document.body.appendChild(btn);
+
+    window.addEventListener("scroll", function() {
+      if (window.scrollY > 500) btn.classList.add("visible");
+      else btn.classList.remove("visible");
+    }, {passive: true});
+
+    btn.addEventListener("click", function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  function initAnchorLinks() {
+    document.querySelectorAll(".content h2, .content h3, .content h4").forEach(function(h) {
+      if (!h.id) return;
+      var a = document.createElement("a");
+      a.className = "anchor-link";
+      a.href = "#" + h.id;
+      a.textContent = "#";
+      h.appendChild(a);
+
+      a.addEventListener("click", function(e) {
+        e.preventDefault();
+        var url = window.location.href.split('#')[0] + '#' + h.id;
+        navigator.clipboard.writeText(url).then(function() {
+          var original = a.textContent;
+          a.textContent = "✓";
+          setTimeout(function() { a.textContent = original; }, 1500);
+        });
+        history.pushState(null, null, '#' + h.id);
+      });
+    });
+  }
+
   /* ── DOMContentLoaded ───────────────────────────────────────────────── */
   document.addEventListener("DOMContentLoaded", function () {
     // IMPORTANT FIX: Inject 'sidebar-wrap' class to the parent div so CSS can position it!
@@ -1005,9 +1372,15 @@ button {
       if (p.textContent.trim() === "{:toc}") p.remove();
     });
 
+    processAbbreviations();
     buildSidebarTOC();
     initScrollspy();
     markActive();
+    initCopyBlock();
+    initLightbox();
+    initReadingProgress();
+    initBackToTop();
+    initAnchorLinks();
 
     var rawTextContent = document.body.textContent || document.body.innerText;
     if (

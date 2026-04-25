@@ -5,9 +5,6 @@
   <meta name="color-scheme" content="light dark">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <title>{{.Title}}</title>
   {{if .FaviconPath}}
   <link rel="icon" type="image/x-icon" href={{.FaviconPath}}>
@@ -25,6 +22,7 @@
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="navbar">
     {{block "navbar" . }}{{end}}
@@ -33,7 +31,7 @@
     {{block "sidebar" .}}{{end}}
   </div>
 
-  <main class="content">
+  <main id="main-content" class="content">
     {{block "content" . }}{{.Content}}{{end}}
   </main>
 

@@ -129,13 +129,17 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdD
 				}
 				continue
 			}
-
+			err = deleteChecksum(db, path)
+			if err != nil {
+				logger.Error("Error while deleting .md file from checksums table.", "error", err.Error())
+			}
 			suffixCut, _ := strings.CutSuffix(path, ".md")
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			err = deleteHTML(filepath.Join(globals.AssetsPath, "pages", extensionSanitized+".html.br"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
+
 			deleteFromCache(filepath.Join(globals.AssetsPath, "pages", extensionSanitized+".html.br"))
 			// Use prefixCut for EventRemove and extensionSanitized for EventRename as per your original logic
 			deleteTerm := prefixCut

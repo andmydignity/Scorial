@@ -4,10 +4,6 @@
 <head>
   <meta name="color-scheme" content="light dark">
   <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{.Title}}</title>
   {{if .FaviconPath}}
@@ -18,8 +14,12 @@
   {{template "commonJS" .}}
   <style>
     /* ── Home Page Layout ───────────────────────────────────────────────── */
+    #sidebar-toggle {
+      display: none !important;
+    }
+    
     .home-header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 4rem;
     }
 
     .home-header h1 {
@@ -85,20 +85,8 @@
     /* Card Grid */
     .page-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1.5rem;
-    }
-
-    @media (min-width: 600px) {
-      .page-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media (min-width: 900px) {
-      .page-grid {
-        grid-template-columns: repeat(5, 1fr);
-      }
     }
 
     .content {
@@ -183,32 +171,49 @@
 
     .no-pages, .no-results {
       grid-column: 1 / -1;
-      padding: 2.5rem;
+      padding: 4.5rem 2rem;
       text-align: center;
       color: var(--text-muted);
       background: var(--bg-alt);
       border-radius: var(--radius);
-      border: 1px dashed var(--border);
+      border: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    
+    .no-pages svg, .no-results svg {
+      opacity: 0.5;
     }
     /* Category Tag */
     .card-category {
       display: inline-block;
       font-size: 0.75rem;
       font-family: var(--font-mono);
-      background: var(--accent-dim);
+      background: var(--surface);
       color: var(--accent);
       padding: 0.15rem 0.5rem;
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       margin-bottom: 0.75rem;
       width: fit-content;
+      transition: background var(--ease), border-color var(--ease);
+      cursor: pointer;
+    }
+    
+    .card-category:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent);
     }
 
     /* Search Controls Layout */
     .search-controls {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 2rem;
       width: 100%;
       max-width: 600px;
     }
@@ -366,6 +371,23 @@
 
         input.addEventListener("input", applyFilters);
         if (catFilter) catFilter.addEventListener("change", applyFilters);
+
+        // Click delegation for category badges
+        const gridsContainer = document.querySelectorAll(".page-grid");
+        gridsContainer.forEach(gc => {
+          gc.addEventListener("click", function(e) {
+            if (e.target.classList.contains("card-category")) {
+              e.preventDefault();
+              if (catFilter) {
+                catFilter.value = e.target.textContent.toLowerCase();
+                catFilter.dispatchEvent(new Event("change"));
+                
+                const searchOffset = document.querySelector(".search-controls").offsetTop - 80;
+                window.scrollTo({ top: searchOffset, behavior: 'smooth' });
+              }
+            }
+          });
+        });
       });
     })();
   </script>
@@ -378,11 +400,12 @@
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <div class="navbar">
     {{block "navbar" .}}{{end}}
   </div>
 
-  <main class="content">
+  <main id="main-content" class="content">
     {{block "content" .}}{{.Content}}{{end}}
   </main>
 
