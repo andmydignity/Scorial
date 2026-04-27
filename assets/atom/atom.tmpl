@@ -17,9 +17,9 @@
     <entry>
         <title>{{ .Title }}</title>
         
-        <link href="{{ $.SiteURL }}{{ .URL }}" rel="alternate" type="text/html" />
+        <link href="https://{{ $.SiteURL }}{{ .URL }}" rel="alternate" type="text/html" />
         
-        <id>{{ $.SiteURL }}{{ .URL }}</id>
+        <id>https://{{ $.SiteURL }}{{ .URL }}</id>
         
         <published>{{ .CreatedAt}}</published>
         <updated>{{ .ModifiedAt}}</updated>
