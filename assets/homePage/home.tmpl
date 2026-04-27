@@ -1,7 +1,7 @@
 {{define "content"}}
 <div class="home-header">
   <h1>{{if .SiteName}}{{.SiteName}}{{else}}Welcome{{end}}</h1>
-  <p>Explore our latest documentation and updates.</p>
+  <p>{{if .SiteDescription}}{{.SiteDescription}}{{else}}Welcome to this site! Unfortunately, owner didn't set and description.{{end}}</p>
   <div class="search-controls">
   <div class="search-bar" style="margin-top: 0; flex-grow: 1;">
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -33,7 +33,7 @@
         <h2>{{.Title}}</h2>
         <p class="overview">{{.OverviewText}}</p>
         <div class="card-meta">
-          <span class="date">Updated: {{.ModifiedAt}}</span>
+          <span class="date">Created: {{.CreatedAt}} | Updated: {{.ModifiedAt}}</span>
         </div>
       </div>
     </a>

@@ -22,6 +22,7 @@ import (
 type PageInfo struct {
 	URL          string
 	ModifiedAt   string
+	CreatedAt    string
 	Title        string
 	ImgPath      string
 	OverviewText string
@@ -29,10 +30,13 @@ type PageInfo struct {
 }
 
 type RenderConfig struct {
-	SiteName        string
-	LogoPath        string
-	FaviconPath     string
-	CardsInHomePage int
+	SiteName          string
+	LogoPath          string
+	FaviconPath       string
+	SiteURL           string
+	SiteDescription   string
+	CardsInHomePage   int
+	OverviewCharCount int
 }
 
 func checksumCalculate(pathTo string) (string, error) {
@@ -132,7 +136,7 @@ func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	query := "SELECT url, title, overview, overviewImg, category ,modifiedAt FROM pages ORDER BY modifiedAt DESC LIMIT ?"
+	query := "SELECT url, title, overview, overviewImg, category ,modifiedAt, createdAt FROM pages ORDER BY createdAt DESC LIMIT ?"
 	res, err := db.QueryContext(ctx, query, numberOf)
 	if err != nil {
 		return nil, err
@@ -141,12 +145,14 @@ func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 
 	for res.Next() {
 		var page PageInfo
-		err = res.Scan(&page.URL, &page.Title, &page.OverviewText, &page.ImgPath, &page.Category, &page.ModifiedAt)
+		err = res.Scan(&page.URL, &page.Title, &page.OverviewText, &page.ImgPath, &page.Category, &page.ModifiedAt, &page.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
 
-		page.ModifiedAt = strings.ReplaceAll(strings.ReplaceAll(page.ModifiedAt, "Z", ""), "T", " ")
+		// page.ModifiedAt = strings.ReplaceAll(strings.ReplaceAll(page.ModifiedAt, "Z", ""), "T", " ")
+		// page.CreatedAt = strings.ReplaceAll(strings.ReplaceAll(page.CreatedAt, "Z", ""), "T", " ")
+
 		pages = append(pages, page)
 	}
 

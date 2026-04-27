@@ -104,6 +104,9 @@
       color: inherit;
       transition: transform var(--ease), box-shadow var(--ease), border-color var(--ease);
     }
+    .page-card * {
+      text-decoration: none !important;
+    }
 
     .page-card:hover {
       transform: translateY(-3px);
@@ -158,6 +161,11 @@
       margin-bottom: 1.25rem;
       line-height: 1.6;
       flex-grow: 1;
+      
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .card-meta {
@@ -254,9 +262,17 @@
           img: {{.ImgPath}},
           overview: {{.OverviewText}},
           category: {{.Category}},
-          date: {{.ModifiedAt}}
+          date: {{.ModifiedAt}},
+          createdAt: {{.CreatedAt}}
         },{{end}}
       ];
+
+      // 2. Formatter for ISO Dates
+      const formatISO = (iso) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      };
 
       document.addEventListener("DOMContentLoaded", function () {
         const input = document.getElementById("page-search");
@@ -297,7 +313,7 @@
                 <h2>${p.title}</h2>
                 <p class="overview">${p.overview}</p>
                 <div class="card-meta">
-                  <span class="date">Updated: ${p.date}</span>
+                  <span class="date">Created: ${formatISO(p.createdAt)} | Updated: ${formatISO(p.date)}</span>
                 </div>
               </div>
             </a>`;
@@ -388,15 +404,14 @@
             }
           });
         });
+
+        // Parse any statically rendered ISO dates (from Go template logic)
+        document.querySelectorAll('.card-meta .date').forEach(el => {
+          el.textContent = el.textContent.replace(/\d{4}-\d{2}-\d{2}T[.Z\d:\+\-]+/g, match => formatISO(match));
+        });
       });
     })();
   </script>
-   {{if .Style}}
-  <link rel="stylesheet" href="/assets/style/{{.Style}}.css">
-  {{end}}
-  {{if .Script}}
-  <script src="/assets/style/{{.Script}}.js"></script>
-  {{end}}
 </head>
 
 <body>

@@ -48,12 +48,13 @@ func TestFirstSync(t *testing.T) {
 			os.Create(filepath.Join(globals.AssetsPath, "templates", "base.tmpl"))
 			os.MkdirAll(filepath.Join(globals.AssetsPath, "homePage"), 0o777)
 			os.Create(filepath.Join(globals.AssetsPath, "homePage", "base.tmpl"))
-
+			os.MkdirAll(filepath.Join(globals.AssetsPath, "atom"), 0o777)
+			os.Create(filepath.Join(globals.AssetsPath, "atom", "atom.tmpl"))
 			for _, file := range test.files {
 				os.MkdirAll(filepath.Dir(filepath.Join(mdDir, file)), 0o777)
 				os.Create(filepath.Join(mdDir, file))
 			}
-			rdrconf := render.RenderConfig{"Test", "", "", 25}
+			rdrconf := render.RenderConfig{"Test", "", "", "", "", 20, 20}
 			err = FirstSync(mdDir, db, &rdrconf)
 
 			if (err != nil && test.wantErr == false) || (err == nil && test.wantErr == true) {
@@ -248,7 +249,8 @@ func TestProcessSync_Events(t *testing.T) {
 			os.Create(filepath.Join(globals.AssetsPath, "templates", "base.tmpl"))
 			os.MkdirAll(filepath.Join(globals.AssetsPath, "homePage"), 0o777)
 			os.Create(filepath.Join(globals.AssetsPath, "homePage", "base.tmpl"))
-
+			os.MkdirAll(filepath.Join(globals.AssetsPath, "atom"), 0o777)
+			os.Create(filepath.Join(globals.AssetsPath, "atom", "atom.tmpl"))
 			// 1. Setup initial files (Before Watcher Starts)
 			for _, file := range tc.initialFiles {
 				fullPath := filepath.Join(mdDir, file)

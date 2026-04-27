@@ -10,7 +10,9 @@
   <link rel="icon" type="image/x-icon" href={{.FaviconPath}}>
   {{end}}
   {{template "commonCSS" .}}
+  {{template "markdownCSS" .}}
   {{template "commonJS" .}}
+  {{template "markdownJS" .}}
   {{if .Style}}
   <link rel="stylesheet" href="/assets/style/{{.Style}}.css">
   {{end}}

@@ -20,6 +20,7 @@ func (cms *CmsStruct) homeHandler(w http.ResponseWriter, r *http.Request, ps htt
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
+		w.Header().Set("Content-Type", "text/html")
 		w.Header().Set("ETag", eTag)
 		w.Write(globals.HomePageCache)
 	} else {
@@ -28,6 +29,28 @@ func (cms *CmsStruct) homeHandler(w http.ResponseWriter, r *http.Request, ps htt
 			cms.internalError(w, err)
 			return
 		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(home)
+	}
+}
+
+func (cms *CmsStruct) atomHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if len(globals.AtomCache) != 0 {
+		eTag := fmt.Sprintf(`"%s"`, globals.AtomChecksumCache)
+		if r.Header.Get("If-None-Match") == eTag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("Content-Type", "text/xml")
+		w.Header().Set("ETag", eTag)
+		w.Write(globals.AtomCache)
+	} else {
+		home, err := os.ReadFile(filepath.Join(globals.AssetsPath, "atom", "atom.xml.br"))
+		if err != nil {
+			cms.internalError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "text/xml")
 		w.Write(home)
 	}
 }
@@ -46,7 +69,7 @@ func (cms *CmsStruct) pageHandler(w http.ResponseWriter, r *http.Request, ps htt
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
-
+		w.Header().Set("Content-Type", "text/html")
 		w.Header().Set("ETag", eTag)
 		w.Write(page)
 		return
@@ -63,6 +86,7 @@ func (cms *CmsStruct) pageHandler(w http.ResponseWriter, r *http.Request, ps htt
 	if page := filesync.FromCache(path); page != nil {
 		checksum := filesync.ChecksumFromCache(path)
 		w.Header().Set("ETag", checksum)
+		w.Header().Set("Content-Type", "text/html")
 		w.Write(page)
 		return
 	}

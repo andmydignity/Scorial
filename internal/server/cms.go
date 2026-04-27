@@ -27,15 +27,18 @@ type CmsConfig struct {
 		Rps   float64
 		Burst int
 	}
-	HTTPSMode   bool
-	Ratelimit   bool
-	CertFile    string
-	KeyFile     string
-	MDDir       string
-	SiteName    string
-	LogoPath    string
-	FaviconPath string
-	Domains     []string
+	HTTPSMode         bool
+	Ratelimit         bool
+	CertFile          string
+	KeyFile           string
+	MDDir             string
+	SiteName          string
+	LogoPath          string
+	SiteURL           string
+	SiteDescription   string
+	FaviconPath       string
+	Domains           []string
+	OverviewCharCount int
 }
 
 type CmsStruct struct {
@@ -59,12 +62,12 @@ func (cms *CmsStruct) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rdr := &render.RenderConfig{cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath, cms.Config.CardsInHomePage}
+	rdr := &render.RenderConfig{cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath, cms.Config.SiteURL, cms.Config.SiteDescription, cms.Config.CardsInHomePage, cms.Config.OverviewCharCount}
 	err := filesync.FirstSync(cms.Config.MDDir, cms.DB, rdr)
 	if err != nil {
 		return err
 	}
-	err = render.RenderSpecials(&render.DataStruct{rdr.SiteName, "", "", "", rdr.SiteName, time.Now().Year(), rdr.FaviconPath, rdr.LogoPath}, rdr.CardsInHomePage, cms.DB)
+	err = render.RenderSpecials(rdr, cms.DB)
 	if err != nil {
 		return err
 	}

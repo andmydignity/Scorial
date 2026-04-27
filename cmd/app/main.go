@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,20 +18,22 @@ import (
 )
 
 type config struct {
-	Port          int      `yaml:"port"`
-	CertPath      string   `yaml:"certPath"`
-	KeyPath       string   `yaml:"keyPath"`
-	CardsInHome   int      `yaml:"cardsInHome"`
-	MdPath        string   `yaml:"mdPath"`
-	SiteName      string   `yaml:"siteName"`
-	LogoPath      string   `yaml:"logoPath"`
-	FaviconPath   string   `yaml:"faviconPath"`
-	HTTPSMode     bool     `yaml:"httpsMode"`
-	Ratelimit     bool     `yaml:"ratelimit"`
-	Replenishment float64  `yaml:"replenishment"`
-	Burst         int      `yaml:"burst"`
-	Domains       []string `yaml:"domains"`
-	LRUSize       int      `yaml:"lruSize"`
+	Port              int      `yaml:"port"`
+	CertPath          string   `yaml:"certPath"`
+	KeyPath           string   `yaml:"keyPath"`
+	CardsInHome       int      `yaml:"cardsInHome"`
+	MdPath            string   `yaml:"mdPath"`
+	SiteName          string   `yaml:"siteName"`
+	LogoPath          string   `yaml:"logoPath"`
+	FaviconPath       string   `yaml:"faviconPath"`
+	HTTPSMode         bool     `yaml:"httpsMode"`
+	Ratelimit         bool     `yaml:"ratelimit"`
+	Replenishment     float64  `yaml:"replenishment"`
+	Burst             int      `yaml:"burst"`
+	Domains           []string `yaml:"domains"`
+	LRUSize           int      `yaml:"lruSize"`
+	SiteDescription   string   `yaml:"description"`
+	OverviewCharCount int      `yaml:"overviewCharCount"`
 }
 
 func OpenDB(dbName string) (*sql.DB, error) {
@@ -52,7 +55,7 @@ func OpenDB(dbName string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT , category TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT , category TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP )`)
 	return db, err
 }
 
@@ -79,11 +82,16 @@ func main() {
 		logger.Error("Couldn't open DB! Error:" + err.Error())
 		os.Exit(3)
 	}
-
+	var siteUrl string
+	if cfg.Domains == nil {
+		siteUrl = fmt.Sprintf("localhost:%v", cfg.Port)
+	} else {
+		siteUrl = cfg.Domains[0]
+	}
 	cmsConfig := server.CmsConfig{cfg.Port, cfg.CardsInHome, struct {
 		Rps   float64
 		Burst int
-	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, cfg.FaviconPath, cfg.Domains}
+	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, siteUrl, cfg.SiteDescription, cfg.FaviconPath, cfg.Domains, cfg.OverviewCharCount}
 	globals.LRUCacheSize = cfg.LRUSize
 	cms := server.CmsStruct{logger, &cmsConfig, db}
 	err = cms.Start()

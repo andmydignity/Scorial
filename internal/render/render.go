@@ -3,6 +3,7 @@ package render
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -43,21 +44,21 @@ type DataStruct struct {
 }
 
 func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) error {
-	page, title, category, err := parseMdToHTML(loadFrom)
+	page, info, err := parseMdToHTML(loadFrom)
 	if err != nil {
 		if errors.Is(err, ErrIsDraft) {
 			// Don't do anything for a draft files.
 			return nil
 		}
 	}
-	overviewText := getOverviewText(117, page) + "..."
+	overviewText := getOverviewText(rndrConf.OverviewCharCount, page) + "..."
 	overviewImg := overviewIMG(page)
 	rel, err := filepath.Rel(filepath.Join(globals.AssetsPath, "pages"), saveTo)
 	if err != nil {
 		return err
 	}
-	url, _ := strings.CutSuffix(rel, ".html.br")
-	url = "/pages/" + url
+	URL, _ := strings.CutSuffix(rel, ".html.br")
+	URL = "/pages/" + URL
 	fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
 	entries, err := os.ReadDir(filepath.Join(globals.AssetsPath, "templates"))
 	if err != nil {
@@ -81,7 +82,7 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) er
 		customJS = fileName
 	}
 
-	data := DataStruct{title, customCSS, customJS, template.HTML(page), rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath, rndrConf.LogoPath}
+	data := DataStruct{info.title, customCSS, customJS, template.HTML(page), rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath, rndrConf.LogoPath}
 	// You pass base just by name, for some reason
 	full, err := RenderTemplates("base.tmpl", &data, templates[:])
 	if err != nil {
@@ -99,33 +100,49 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) er
 	if err != nil {
 		return err
 	}
-	_, err = db.Exec(
-		"INSERT INTO pages (url, title, overview, overviewImg, category) VALUES (?, ?, ?, ?, ?) ON CONFLICT(url) DO UPDATE SET title=excluded.title, overview=excluded.overview, overviewImg=excluded.overviewImg",
-		url, title, overviewText, overviewImg, category,
+	URL = strings.ReplaceAll(URL, " ", "%20")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err = db.ExecContext(ctx, `
+    INSERT INTO pages (url, title, overview, overviewImg, category, createdAt, modifiedAt) 
+    VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
+    ON CONFLICT(url) DO UPDATE SET 
+        title=excluded.title, 
+        overview=excluded.overview, 
+        overviewImg=excluded.overviewImg,
+        category=excluded.category,
+        modifiedAt=CURRENT_TIMESTAMP
+`,
+		URL, info.title, overviewText, overviewImg, info.category, info.date,
 	)
 	if err != nil {
 		return err
 	}
-	return RenderSpecials(&data, rndrConf.CardsInHomePage, db)
+	return RenderSpecials(rndrConf, db)
 }
 
-func RenderSpecials(conf *DataStruct, card int, db *sql.DB) error {
-	return renderHome(conf, card, db)
-}
-
-func renderHome(conf *DataStruct, card int, db *sql.DB) error {
-	type homeDataStruct struct {
-		Title       string
-		Style       string
-		Script      string
-		SiteName    string
-		Year        int
-		LatestPages []PageInfo
-		AllPages    []PageInfo
-		LogoPath    string
-		FaviconPath string
+func RenderSpecials(conf *RenderConfig, db *sql.DB) error {
+	err := renderHome(conf, db)
+	if err != nil {
+		return err
 	}
-	latestPages, err := GetPages(card, db)
+	return renderAtom(conf, db)
+}
+
+func renderHome(conf *RenderConfig, db *sql.DB) error {
+	type homeDataStruct struct {
+		Title string
+		// Style       string
+		// Script      string
+		SiteName        string
+		SiteDescription string
+		Year            int
+		LatestPages     []PageInfo
+		AllPages        []PageInfo
+		LogoPath        string
+		FaviconPath     string
+	}
+	latestPages, err := GetPages(conf.CardsInHomePage, db)
 	if err != nil {
 		return err
 	}
@@ -133,7 +150,7 @@ func renderHome(conf *DataStruct, card int, db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	homeData := homeDataStruct{conf.Title, conf.Style, conf.Script, conf.SiteName, time.Now().Year(), latestPages, allPages, conf.LogoPath, conf.FaviconPath}
+	homeData := homeDataStruct{conf.SiteName, conf.SiteName, conf.SiteDescription, time.Now().Year(), latestPages, allPages, conf.LogoPath, conf.FaviconPath}
 	entries, err := os.ReadDir(filepath.Join(globals.AssetsPath, "homePage"))
 	if err != nil {
 		return err

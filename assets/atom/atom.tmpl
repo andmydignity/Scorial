@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>{{ .FeedTitle }}</title>
+    {{ if .FeedSubtitle }}<subtitle>{{ .FeedSubtitle }}</subtitle>{{ end }}
+    
+    <link href="https://{{ .SiteURL }}/" rel="alternate" type="text/html" />
+    <link href="https://{{ .SiteURL }}/atom.xml" rel="self" type="application/atom+xml" />
+    
+    <id>{{ .SiteURL }}/</id>
+    <updated>{{ .LastBuildDate }}</updated>
+    
+    <author>
+        <name>{{ .AuthorName }}</name>
+    </author>
+
+    {{ range .Pages }}
+    <entry>
+        <title>{{ .Title }}</title>
+        
+        <link href="{{ $.SiteURL }}{{ .URL }}" rel="alternate" type="text/html" />
+        
+        <id>{{ $.SiteURL }}{{ .URL }}</id>
+        
+        <published>{{ .CreatedAt}}</published>
+        <updated>{{ .ModifiedAt}}</updated>
+        
+        <summary type="html"><![CDATA[{{ .OverviewText }}]]></summary>
+        
+        {{ if .Category }}
+        <category term="{{ .Category }}" />
+        {{ end }}
+    </entry>
+    {{ end }}
+</feed>

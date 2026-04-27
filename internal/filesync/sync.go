@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"cms/internal/globals"
 	"cms/internal/render"
@@ -151,7 +150,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdD
 				logger.Error("Couldn't delete orphaned page from 'pages' table!", "error", err.Error())
 			}
 
-			err = render.RenderSpecials(&render.DataStruct{rndrConf.SiteName, "", "", "", rndrConf.SiteName, time.Now().Year(), rndrConf.FaviconPath, rndrConf.LogoPath}, rndrConf.CardsInHomePage, db)
+			err = render.RenderSpecials(rndrConf, db)
 			if err != nil {
 				logger.Error("Couldn't render home after markdown deletion.", "error", err.Error())
 			}

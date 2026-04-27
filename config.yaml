@@ -16,7 +16,8 @@ mdPath: "mdFiles"
 siteName: "My Site"
 logoPath: ""
 faviconPath: ""
-
+description: "My site best site!"
+overviewCharCount: 200
 #LRU size: up to how many pages should Least Recently Used cache hold.
 #Increasing this increases performance especially if you have a lot of pages. But it also increases RAM usage.
 #You can assume increasing by 1 increases the max RAM usage by around 10KB for text-heavy articles or around 4KB for basic pages.

@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/adrg/frontmatter"
@@ -45,11 +47,18 @@ var mdParser = goldmark.New(
 )
 
 type ameta struct {
-	Layout   string   `yaml:"layout"`
-	Title    string   `yaml:"title"`
-	Category string   `yaml:"category"`
-	Tags     []string `yaml:"tags"`
-	Draft    bool     `yaml:"draft"`
+	Layout   string    `yaml:"layout"`
+	Title    string    `yaml:"title"`
+	Category string    `yaml:"category"`
+	Tags     []string  `yaml:"tags"`
+	Draft    bool      `yaml:"draft"`
+	Date     time.Time `yaml:"date"`
+}
+
+type mdinfo struct {
+	title    string
+	category string
+	date     string
 }
 
 var (
@@ -57,19 +66,31 @@ var (
 	ErrIsDraft    = errors.New(".md file is a draft.")
 )
 
-func parseMdToHTML(loadFrom string) (data []byte, title string, category_ string, err error) {
+func parseMdToHTML(loadFrom string) (data []byte, mdInfo mdinfo, err error) {
 	raw, err := loadFromFile(loadFrom)
 	if err != nil {
-		return nil, "", "", err
+		return nil, mdinfo{}, err
 	}
 
 	m := ameta{}
+	info := mdinfo{}
 	body, err := frontmatter.Parse(bytes.NewReader(raw), &m)
 	if err != nil {
-		return nil, "", "", err
+		return nil, mdinfo{}, err
 	}
+	tempDate := time.Time{}
+	if m.Date.IsZero() {
+		stat, err := os.Stat(loadFrom)
+		if err != nil {
+			tempDate = time.Now()
+		}
+		tempDate = stat.ModTime()
+	} else {
+		tempDate = m.Date
+	}
+	info.date = tempDate.UTC().Format(time.RFC3339)
 	if m.Draft {
-		return nil, "", "", ErrIsDraft
+		return nil, mdinfo{}, ErrIsDraft
 	}
 	var category string
 	if m.Category == "" {
@@ -81,25 +102,28 @@ func parseMdToHTML(loadFrom string) (data []byte, title string, category_ string
 	} else {
 		category = m.Category
 	}
-
+	info.category = category
 	var buf bytes.Buffer
 	if err := mdParser.Convert(body, &buf); err != nil {
-		return nil, "", "", err
+		return nil, mdinfo{}, err
 	}
 	rendered := buf.Bytes()
 
 	if m.Title != "" {
-		return rendered, m.Title, category, nil
+		info.title = m.Title
+		return rendered, info, nil
 	}
-	title, err = parseTitleFromMd(body)
+	title, err := parseTitleFromMd(body)
 	if errors.Is(err, ErrFaultyUTF8) {
-		return rendered, "", category, ErrFaultyUTF8
+		return nil, mdinfo{}, ErrFaultyUTF8
 	}
 	if err != nil {
 		fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
-		return rendered, fileName, category, nil
+		info.title = fileName
+		return rendered, info, nil
 	}
-	return rendered, title, category, nil
+	info.title = title
+	return rendered, info, nil
 }
 
 func parseTitleFromMd(data []byte) (string, error) {

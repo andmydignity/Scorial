@@ -9,8 +9,8 @@ import (
 var (
 	AssetsPath, CertsPath, DBPath, BinaryPath string
 	LRUCacheSize                              int
-	HomePageCache                             []byte
-	HomePageChecksumCache                     string
+	HomePageCache, AtomCache                  []byte
+	HomePageChecksumCache, AtomChecksumCache  string
 )
 
 func getBinaryDir() (string, error) {
