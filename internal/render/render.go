@@ -4,7 +4,6 @@ package render
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 )
 
 // assets/templates
@@ -43,7 +42,8 @@ type DataStruct struct {
 	LogoPath    string
 }
 
-func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) error {
+func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig) error {
+	db := rndrConf.DB
 	page, info, err := parseMdToHTML(loadFrom)
 	if err != nil {
 		if errors.Is(err, ErrIsDraft) {
@@ -118,18 +118,19 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig, db *sql.DB) er
 	if err != nil {
 		return err
 	}
-	return RenderSpecials(rndrConf, db)
+	return RenderSpecials(rndrConf)
 }
 
-func RenderSpecials(conf *RenderConfig, db *sql.DB) error {
-	err := renderHome(conf, db)
+func RenderSpecials(conf *RenderConfig) error {
+	err := renderHome(conf)
 	if err != nil {
 		return err
 	}
-	return renderAtom(conf, db)
+	return renderAtom(conf)
 }
 
-func renderHome(conf *RenderConfig, db *sql.DB) error {
+func renderHome(conf *RenderConfig) error {
+	db := conf.DB
 	type homeDataStruct struct {
 		Title string
 		// Style       string

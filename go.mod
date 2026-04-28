@@ -1,4 +1,4 @@
-module cms
+module github.com/andmydignity/Scorial
 
 go 1.25.7
 

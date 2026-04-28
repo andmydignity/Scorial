@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 
 	"github.com/andybalholm/brotli"
 	"golang.org/x/net/html"
@@ -30,13 +30,17 @@ type PageInfo struct {
 }
 
 type RenderConfig struct {
-	SiteName          string
-	LogoPath          string
-	FaviconPath       string
-	SiteURL           string
-	SiteDescription   string
-	CardsInHomePage   int
-	OverviewCharCount int
+	DB                    *sql.DB
+	SiteName              string
+	LogoPath              string
+	FaviconPath           string
+	SiteURL               string
+	SiteDescription       string
+	CardsInHomePage       int
+	OverviewCharCount     int
+	MDDir                 string
+	PagesInAtomFeed       int
+	MainContentInAtomFeed bool
 }
 
 func checksumCalculate(pathTo string) (string, error) {
@@ -175,6 +179,11 @@ func brotliData(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+func brotliUncompress(data []byte) ([]byte, error) {
+	br := brotli.NewReader(bytes.NewReader(data))
+	return io.ReadAll(br)
 }
 
 func getCommonTemplates(ts *template.Template) error {

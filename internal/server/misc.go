@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 )
 
 var (

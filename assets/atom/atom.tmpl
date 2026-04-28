@@ -6,7 +6,7 @@
     <link href="https://{{ .SiteURL }}/" rel="alternate" type="text/html" />
     <link href="https://{{ .SiteURL }}/atom.xml" rel="self" type="application/atom+xml" />
     
-    <id>{{ .SiteURL }}/</id>
+    <id>https://{{ .SiteURL }}/</id>
     <updated>{{ .LastBuildDate }}</updated>
     
     <author>
@@ -24,8 +24,8 @@
         <published>{{ .CreatedAt}}</published>
         <updated>{{ .ModifiedAt}}</updated>
         
-        <summary type="html"><![CDATA[{{ .OverviewText }}]]></summary>
-        
+        <summary type="text"><![CDATA[{{ .OverviewText }}]]></summary>
+        <content type="html"><![CDATA[{{ .Content }}]]></content> 
         {{ if .Category }}
         <category term="{{ .Category }}" />
         {{ end }}

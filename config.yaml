@@ -1,5 +1,5 @@
 # Important suggestion for Cloudflare users or any other DNS/CDN which caches pages:
-# To reduce the network/system load even more (by a massive amount), consider enabling page caching "/pages/*" and "/" (no *, just the homepage) in the dashboard.
+# To reduce the network/system load even more (by a massive amount), consider enabling page caching "/pages/*", "/" (no *, just the homepage) and "/atom.xml" in the dashboard.
 # Enable "Respect strong ETags" in cache rules if you are going to enable page caching.
 # DEFINETLY do these if you are running this in a cheap VPS and/or have low-bandwith.
 
@@ -17,7 +17,16 @@ siteName: "My Site"
 logoPath: ""
 faviconPath: ""
 description: "My site best site!"
+#Amount of chars to be displayed on home page overviews.
 overviewCharCount: 200
+
+#IMPORTANT: Atom feed assumes your page uses HTTPS, at least for now.
+#Amount of the latest pages (relative to creation time) that will be included in atom feed.
+pagesInAtomFeed: 20
+
+#To put <main> content of pages to the Atom feed. It allows readers to read your page without visiting your website.#
+mainContentInAtomFeed: true
+
 #LRU size: up to how many pages should Least Recently Used cache hold.
 #Increasing this increases performance especially if you have a lot of pages. But it also increases RAM usage.
 #You can assume increasing by 1 increases the max RAM usage by around 10KB for text-heavy articles or around 4KB for basic pages.

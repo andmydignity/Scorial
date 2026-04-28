@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 
 	"github.com/julienschmidt/httprouter"
 )

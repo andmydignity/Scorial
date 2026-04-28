@@ -2,22 +2,22 @@ package filesync
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 
-	"cms/internal/globals"
-	"cms/internal/render"
+	"github.com/andmydignity/Scorial/internal/globals"
+	"github.com/andmydignity/Scorial/internal/render"
 
 	"github.com/sgtdi/fswatcher"
 	_ "modernc.org/sqlite"
 )
 
-func FirstSync(mdDir string, db *sql.DB, rndrConf *render.RenderConfig) error {
-	mdDirAbs, err := filepath.Abs(mdDir)
+func FirstSync(rndrConf *render.RenderConfig) error {
+	db := rndrConf.DB
+	mdDirAbs, err := filepath.Abs(rndrConf.MDDir)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func FirstSync(mdDir string, db *sql.DB, rndrConf *render.RenderConfig) error {
 			}
 			prefixCut, _ := strings.CutPrefix(file, mdDirAbs)
 			extensionSanitized, _ := strings.CutSuffix(prefixCut, ".md")
-			err = render.RenderNSave(file, filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf, db)
+			err = render.RenderNSave(file, filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf)
 			if err != nil {
 				return err
 			}
@@ -71,17 +71,19 @@ func FirstSync(mdDir string, db *sql.DB, rndrConf *render.RenderConfig) error {
 	return nil
 }
 
-func Sync(ctx context.Context, db *sql.DB, mdDir string, logger *slog.Logger, rndrConf *render.RenderConfig) error {
-	watcher, err := fswatcher.New(fswatcher.WithPath(mdDir), fswatcher.WithSeverity(fswatcher.SeverityInfo))
+func Sync(ctx context.Context, logger *slog.Logger, rndrConf *render.RenderConfig) error {
+	watcher, err := fswatcher.New(fswatcher.WithPath(rndrConf.MDDir), fswatcher.WithSeverity(fswatcher.SeverityInfo))
 	if err != nil {
 		return err
 	}
-	return processSync(ctx, watcher, db, mdDir, logger, rndrConf)
+	return processSync(ctx, watcher, logger, rndrConf)
 }
 
-func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdDir string, logger *slog.Logger, rndrConf *render.RenderConfig) error {
+func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Logger, rndrConf *render.RenderConfig) error {
 	defer watcher.Close()
 	var dirs []string
+	db := rndrConf.DB
+	mdDir := rndrConf.MDDir
 	absMdDir, err := filepath.Abs(mdDir)
 	if err != nil {
 		return err
@@ -150,7 +152,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdD
 				logger.Error("Couldn't delete orphaned page from 'pages' table!", "error", err.Error())
 			}
 
-			err = render.RenderSpecials(rndrConf, db)
+			err = render.RenderSpecials(rndrConf)
 			if err != nil {
 				logger.Error("Couldn't render home after markdown deletion.", "error", err.Error())
 			}
@@ -188,7 +190,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdD
 								appendChecksum(db, walkPath, checksum)
 								prefixCutWalk, _ := strings.CutPrefix(walkPath, absMdDir)
 								extSanitizedWalk, _ := strings.CutSuffix(prefixCutWalk, ".md")
-								render.RenderNSave(walkPath, filepath.Join(globals.AssetsPath, "pages", extSanitizedWalk), rndrConf, db)
+								render.RenderNSave(walkPath, filepath.Join(globals.AssetsPath, "pages", extSanitizedWalk), rndrConf)
 							}
 							return nil
 						})
@@ -224,7 +226,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, db *sql.DB, mdD
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			if err := render.RenderNSave(
 				path,
-				filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf, db); err != nil {
+				filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf); err != nil {
 				logger.Error("Render error", "error", err)
 			}
 		}

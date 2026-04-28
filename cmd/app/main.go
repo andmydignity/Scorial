@@ -11,29 +11,31 @@ import (
 	"path/filepath"
 	"time"
 
-	"cms/internal/globals"
-	"cms/internal/server"
+	"github.com/andmydignity/Scorial/internal/globals"
+	"github.com/andmydignity/Scorial/internal/server"
 
 	"gopkg.in/yaml.v2"
 )
 
 type config struct {
-	Port              int      `yaml:"port"`
-	CertPath          string   `yaml:"certPath"`
-	KeyPath           string   `yaml:"keyPath"`
-	CardsInHome       int      `yaml:"cardsInHome"`
-	MdPath            string   `yaml:"mdPath"`
-	SiteName          string   `yaml:"siteName"`
-	LogoPath          string   `yaml:"logoPath"`
-	FaviconPath       string   `yaml:"faviconPath"`
-	HTTPSMode         bool     `yaml:"httpsMode"`
-	Ratelimit         bool     `yaml:"ratelimit"`
-	Replenishment     float64  `yaml:"replenishment"`
-	Burst             int      `yaml:"burst"`
-	Domains           []string `yaml:"domains"`
-	LRUSize           int      `yaml:"lruSize"`
-	SiteDescription   string   `yaml:"description"`
-	OverviewCharCount int      `yaml:"overviewCharCount"`
+	Port                  int      `yaml:"port"`
+	CertPath              string   `yaml:"certPath"`
+	KeyPath               string   `yaml:"keyPath"`
+	CardsInHome           int      `yaml:"cardsInHome"`
+	MdPath                string   `yaml:"mdPath"`
+	SiteName              string   `yaml:"siteName"`
+	LogoPath              string   `yaml:"logoPath"`
+	FaviconPath           string   `yaml:"faviconPath"`
+	HTTPSMode             bool     `yaml:"httpsMode"`
+	Ratelimit             bool     `yaml:"ratelimit"`
+	Replenishment         float64  `yaml:"replenishment"`
+	Burst                 int      `yaml:"burst"`
+	Domains               []string `yaml:"domains"`
+	LRUSize               int      `yaml:"lruSize"`
+	SiteDescription       string   `yaml:"description"`
+	OverviewCharCount     int      `yaml:"overviewCharCount"`
+	PagesInAtomFeed       int      `yaml:"pagesInAtomFeed"`
+	MainContentInAtomFeed bool     `yaml:"mainContentInAtomFeed"`
 }
 
 func OpenDB(dbName string) (*sql.DB, error) {
@@ -77,6 +79,13 @@ func main() {
 		logger.Error("Max LRU Cache size has to be more than 0.")
 		os.Exit(4)
 	}
+	if cfg.CardsInHome <= 0 {
+		logger.Error("Cards in home must be over 0.")
+		os.Exit(4)
+	}
+	if cfg.OverviewCharCount < 0 {
+		logger.Error("OverviewCharCount cannot be smaller than 0.")
+	}
 	db, err := OpenDB("database.db")
 	if err != nil {
 		logger.Error("Couldn't open DB! Error:" + err.Error())
@@ -91,7 +100,7 @@ func main() {
 	cmsConfig := server.CmsConfig{cfg.Port, cfg.CardsInHome, struct {
 		Rps   float64
 		Burst int
-	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, siteUrl, cfg.SiteDescription, cfg.FaviconPath, cfg.Domains, cfg.OverviewCharCount}
+	}{cfg.Replenishment, cfg.Burst}, cfg.HTTPSMode, cfg.Ratelimit, cfg.CertPath, cfg.KeyPath, cfg.MdPath, cfg.SiteName, cfg.LogoPath, siteUrl, cfg.SiteDescription, cfg.FaviconPath, cfg.Domains, cfg.OverviewCharCount, cfg.PagesInAtomFeed, cfg.MainContentInAtomFeed}
 	globals.LRUCacheSize = cfg.LRUSize
 	cms := server.CmsStruct{logger, &cmsConfig, db}
 	err = cms.Start()

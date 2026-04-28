@@ -11,9 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"cms/internal/globals"
-	_ "cms/internal/globals"
-	"cms/internal/render"
+	"github.com/andmydignity/Scorial/internal/globals"
+	"github.com/andmydignity/Scorial/internal/render"
 
 	"github.com/sgtdi/fswatcher"
 )
@@ -54,8 +53,8 @@ func TestFirstSync(t *testing.T) {
 				os.MkdirAll(filepath.Dir(filepath.Join(mdDir, file)), 0o777)
 				os.Create(filepath.Join(mdDir, file))
 			}
-			rdrconf := render.RenderConfig{"Test", "", "", "", "", 20, 20}
-			err = FirstSync(mdDir, db, &rdrconf)
+			rdrconf := render.RenderConfig{db, "Test", "", "", "", "", 20, 20, mdDir, 20, false}
+			err = FirstSync(&rdrconf)
 
 			if (err != nil && test.wantErr == false) || (err == nil && test.wantErr == true) {
 				errText := ""
@@ -266,11 +265,11 @@ func TestProcessSync_Events(t *testing.T) {
 
 			mockWatcher := NewMockWatcher()
 			logger := slog.Default()
-			rdrconf := &render.RenderConfig{SiteName: "Test"}
+			rdrconf := &render.RenderConfig{db, "Test", "Test", "", "", "", 20, 200, mdDir, 20, true}
 			ctx, cancel := context.WithCancel(context.Background())
 
 			// 2. Start the processor
-			go processSync(ctx, mockWatcher, db, mdDir, logger, rdrconf)
+			go processSync(ctx, mockWatcher, logger, rdrconf)
 
 			// Yield briefly to ensure the initial WalkDir inside processSync finishes
 			time.Sleep(10 * time.Millisecond)

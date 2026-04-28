@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 
 	_ "modernc.org/sqlite"
 )
@@ -136,6 +136,7 @@ func deleteFromPages(path string, db *sql.DB) error {
 	trim := strings.TrimSuffix(path, ".md")
 
 	url := "/pages" + trim
+	url = strings.ReplaceAll(url, " ", "%20")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err := db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)

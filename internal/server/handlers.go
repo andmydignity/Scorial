@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"cms/internal/filesync"
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/filesync"
+	"github.com/andmydignity/Scorial/internal/globals"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -41,7 +41,7 @@ func (cms *CmsStruct) atomHandler(w http.ResponseWriter, r *http.Request, ps htt
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
-		w.Header().Set("Content-Type", "text/xml")
+		w.Header().Set("Content-Type", "application/atom+xml")
 		w.Header().Set("ETag", eTag)
 		w.Write(globals.AtomCache)
 	} else {
@@ -50,7 +50,7 @@ func (cms *CmsStruct) atomHandler(w http.ResponseWriter, r *http.Request, ps htt
 			cms.internalError(w, err)
 			return
 		}
-		w.Header().Set("Content-Type", "text/xml")
+		w.Header().Set("Content-Type", "application/atom+xml")
 		w.Write(home)
 	}
 }

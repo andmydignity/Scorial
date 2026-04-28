@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 )
 
 type page struct {

@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"cms/internal/globals"
+	"github.com/andmydignity/Scorial/internal/globals"
 )
 
 func TestAppendToCacheAndFromCache(t *testing.T) {

@@ -2,6 +2,8 @@
 package server
 
 import (
+	"github.com/andmydignity/Scorial/internal/globals"
+	"github.com/andmydignity/Scorial/internal/render"
 	"context"
 	"database/sql"
 	"fmt"
@@ -13,9 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"cms/internal/filesync"
-	"cms/internal/globals"
-	"cms/internal/render"
+	"github.com/andmydignity/Scorial/internal/filesync"
 
 	"github.com/caddyserver/certmagic"
 )
@@ -27,18 +27,20 @@ type CmsConfig struct {
 		Rps   float64
 		Burst int
 	}
-	HTTPSMode         bool
-	Ratelimit         bool
-	CertFile          string
-	KeyFile           string
-	MDDir             string
-	SiteName          string
-	LogoPath          string
-	SiteURL           string
-	SiteDescription   string
-	FaviconPath       string
-	Domains           []string
-	OverviewCharCount int
+	HTTPSMode             bool
+	Ratelimit             bool
+	CertFile              string
+	KeyFile               string
+	MDDir                 string
+	SiteName              string
+	LogoPath              string
+	SiteURL               string
+	SiteDescription       string
+	FaviconPath           string
+	Domains               []string
+	OverviewCharCount     int
+	PagesInAtomFeedd      int
+	MainContentInAtomFeed bool
 }
 
 type CmsStruct struct {
@@ -62,16 +64,16 @@ func (cms *CmsStruct) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rdr := &render.RenderConfig{cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath, cms.Config.SiteURL, cms.Config.SiteDescription, cms.Config.CardsInHomePage, cms.Config.OverviewCharCount}
-	err := filesync.FirstSync(cms.Config.MDDir, cms.DB, rdr)
+	rdr := &render.RenderConfig{cms.DB, cms.Config.SiteName, cms.Config.LogoPath, cms.Config.FaviconPath, cms.Config.SiteURL, cms.Config.SiteDescription, cms.Config.CardsInHomePage, cms.Config.OverviewCharCount, cms.Config.MDDir, cms.Config.PagesInAtomFeedd, cms.Config.MainContentInAtomFeed}
+	err := filesync.FirstSync(rdr)
 	if err != nil {
 		return err
 	}
-	err = render.RenderSpecials(rdr, cms.DB)
+	err = render.RenderSpecials(rdr)
 	if err != nil {
 		return err
 	}
-	go filesync.Sync(ctx, cms.DB, cms.Config.MDDir, cms.Logger, rdr)
+	go filesync.Sync(ctx, cms.Logger, rdr)
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)

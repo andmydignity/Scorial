@@ -39,6 +39,7 @@ func (cms *CmsStruct) headersMiddleware(next httprouter.Handle) httprouter.Handl
 		}
 		// Etags are handled by handlers.
 		h.Set("Content-Encoding", "br")
+		h.Set("Server", "Scorial")
 		h.Set("Cache-Control", "public, max-age=150, no-transform, s-maxage=70, stale-while-revalidate=10")
 		// h.Set("Content-Type", "text/html; charset=utf-8")
 		h.Set("X-Content-Type-Options", "nosniff")
