@@ -34,7 +34,7 @@ type config struct {
 	LRUSize               int      `yaml:"lruSize"`
 	SiteDescription       string   `yaml:"description"`
 	OverviewCharCount     int      `yaml:"overviewCharCount"`
-	PagesInAtomFeed       int      `yaml:"pagesInAtomFeed"`
+	PagesInAtomFeed       int      `yaml:"postsInAtomFeed"`
 	MainContentInAtomFeed bool     `yaml:"mainContentInAtomFeed"`
 }
 

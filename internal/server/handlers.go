@@ -61,7 +61,7 @@ func (cms *CmsStruct) pageHandler(w http.ResponseWriter, r *http.Request, ps htt
 		cms.badRequest(w, "Page name empty.")
 		return
 	}
-	path := filepath.Join(globals.AssetsPath, "pages", name+".html.br")
+	path := filepath.Join(globals.AssetsPath, "posts", name+".html.br")
 	if page := filesync.FromCache(path); page != nil {
 		checksum := filesync.ChecksumFromCache(path)
 		eTag := fmt.Sprintf(`"%s"`, checksum)

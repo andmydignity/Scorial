@@ -136,11 +136,11 @@ func overviewIMG(page []byte) string {
 }
 
 func GetPosts(numberOf int, db *sql.DB) ([]PostInfo, error) {
-	pages := []PostInfo{}
+	posts := []PostInfo{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	query := "SELECT url, title, overview, overviewImg, category ,modifiedAt, createdAt FROM pages ORDER BY createdAt DESC LIMIT ?"
+	query := "SELECT url, title, overview, overviewImg, category ,modifiedAt, createdAt FROM posts ORDER BY createdAt DESC LIMIT ?"
 	res, err := db.QueryContext(ctx, query, numberOf)
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func GetPosts(numberOf int, db *sql.DB) ([]PostInfo, error) {
 		// page.ModifiedAt = strings.ReplaceAll(strings.ReplaceAll(page.ModifiedAt, "Z", ""), "T", " ")
 		// page.CreatedAt = strings.ReplaceAll(strings.ReplaceAll(page.CreatedAt, "Z", ""), "T", " ")
 
-		pages = append(pages, page)
+		posts = append(posts, page)
 	}
 
 	// Always check for errors that might have occurred during iteration
@@ -165,7 +165,7 @@ func GetPosts(numberOf int, db *sql.DB) ([]PostInfo, error) {
 		return nil, err
 	}
 
-	return pages, nil
+	return posts, nil
 }
 
 func brotliData(data []byte) ([]byte, error) {

@@ -125,14 +125,14 @@ func TestPurgeOrphanHTML(t *testing.T) {
 			db := mockDB(t)
 			temp := t.TempDir()
 			mdDir := filepath.Join(temp, "mdDir")
-			pages := filepath.Join(temp, "pages")
+			posts := filepath.Join(temp, "posts")
 			err := os.Mkdir(mdDir, 0o777)
 			if err != nil {
 				t.Error("Could not create mdDir. " + err.Error())
 			}
-			err = os.Mkdir(pages, 0o777)
+			err = os.Mkdir(posts, 0o777)
 			if err != nil {
-				t.Error("Could not create pages directory. " + err.Error())
+				t.Error("Could not create posts directory. " + err.Error())
 			}
 			absMdFiles := []string{}
 			for _, md := range tt.mdFiles {
@@ -149,7 +149,7 @@ func TestPurgeOrphanHTML(t *testing.T) {
 				}
 			}
 			for _, page := range tt.htmlFiles {
-				page = filepath.Join(pages, page)
+				page = filepath.Join(posts, page)
 				dir := filepath.Dir(page)
 				err = os.MkdirAll(dir, 0o666)
 				if err != nil {
@@ -168,12 +168,12 @@ func TestPurgeOrphanHTML(t *testing.T) {
 			fmt.Println(set)
 			gotErr := false
 			errText := ""
-			err = purgeOrphanedHTMLs(pages, mdDir, set, db)
+			err = purgeOrphanedHTMLs(posts, mdDir, set, db)
 			if err != nil {
 				gotErr = true
 				errText = err.Error()
 			}
-			l, _ := os.ReadDir(pages)
+			l, _ := os.ReadDir(posts)
 			for _, a := range l {
 				fmt.Println(a.Name())
 			}
@@ -181,11 +181,11 @@ func TestPurgeOrphanHTML(t *testing.T) {
 				t.Errorf("gotErr: %v wantErr: %v errText: %v", gotErr, tt.wantErr, errText)
 			}
 			gotFiles := []string{}
-			filepath.WalkDir(pages, func(path string, d fs.DirEntry, err error) error {
+			filepath.WalkDir(posts, func(path string, d fs.DirEntry, err error) error {
 				if d.IsDir() {
 					return nil
 				}
-				rel, erro := filepath.Rel(pages, path)
+				rel, erro := filepath.Rel(posts, path)
 				if erro != nil {
 					t.Error("filepath.Rel failed. " + err.Error())
 				}

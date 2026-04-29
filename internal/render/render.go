@@ -1,4 +1,4 @@
-// Package render is about generating full.html.br pages from templates and parsing markdown to html.
+// Package render is about generating full.html.br posts from templates and parsing markdown to html.
 package render
 
 import (
@@ -120,10 +120,7 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig) error {
 `,
 		URL, info.title, overviewText, overviewImg, info.category, info.date,
 	)
-	if err != nil {
-		return err
-	}
-	return RenderSpecials(rndrConf)
+	return err
 }
 
 func RenderSpecials(conf *RenderConfig) error {

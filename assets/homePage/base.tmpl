@@ -177,7 +177,7 @@
       padding-top: 0.75rem;
     }
 
-    .no-pages, .no-results {
+    .no-posts, .no-results {
       grid-column: 1 / -1;
       padding: 4.5rem 2rem;
       text-align: center;
@@ -192,7 +192,7 @@
       gap: 1rem;
     }
     
-    .no-pages svg, .no-results svg {
+    .no-posts svg, .no-results svg {
       opacity: 0.5;
     }
     /* Category Tag */
@@ -256,7 +256,7 @@
 
       // 1. Inject JSON array with Category
       const allPages = [
-        {{range .AllPages}}{
+        {{range .AllPosts}}{
           url: {{.URL}},
           title: {{.Title}},
           img: {{.ImgPath}},

@@ -577,7 +577,7 @@ body.zen-mode .content {
     var rawMinutes = words / 200; // 200 WPM rate
     var minutes = Math.max(1, Math.ceil(rawMinutes));
     
-    // Only inject on likely article pages (not the home page indexing)
+    // Only inject on likely article posts (not the home page indexing)
     if (!document.querySelector(".home-header")) {
        var meta = document.createElement("span");
        meta.className = "read-time-meta";

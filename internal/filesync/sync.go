@@ -109,6 +109,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 		return err
 	}
 	go watcher.Watch(ctx)
+	var needsSpecialRender bool
 	for event := range watcher.Events() {
 		types := event.Types
 		path := event.Path
@@ -154,8 +155,8 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 			if err = deleteFromPosts(deleteTerm, db); err != nil {
 				logger.Error("Couldn't delete orphaned page from 'posts' table!", "error", err.Error())
 			}
+			needsSpecialRender = true
 
-			err = render.RenderSpecials(rndrConf)
 			if err != nil {
 				logger.Error("Couldn't render home after markdown deletion.", "error", err.Error())
 			}
@@ -194,6 +195,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 								prefixCutWalk, _ := strings.CutPrefix(walkPath, absMdDir)
 								extSanitizedWalk, _ := strings.CutSuffix(prefixCutWalk, ".md")
 								render.RenderNSave(walkPath, filepath.Join(globals.AssetsPath, "posts", extSanitizedWalk), rndrConf)
+								needsSpecialRender = true
 							}
 							return nil
 						})
@@ -232,6 +234,13 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 				filepath.Join(globals.AssetsPath, "posts", extensionSanitized), rndrConf); err != nil {
 				logger.Error("Render error", "error", err)
 			}
+			needsSpecialRender = true
+		}
+		if needsSpecialRender && len(watcher.Events()) == 0 {
+			if err := render.RenderSpecials(rndrConf); err != nil {
+				logger.Error("Couldn't render specials.", "error", err.Error())
+			}
+			needsSpecialRender = false
 		}
 	}
 	return nil

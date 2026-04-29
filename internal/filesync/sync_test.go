@@ -33,7 +33,7 @@ func TestFirstSync(t *testing.T) {
 			db := mockDB(t)
 			tempDir := t.TempDir()
 			mdDir := filepath.Join(tempDir, "mdDir")
-			pageDir := filepath.Join(tempDir, "assets", "pages")
+			pageDir := filepath.Join(tempDir, "assets", "posts")
 			err := os.MkdirAll(mdDir, 0o777)
 			if err != nil {
 				t.Fatal("Couldn't create mdDir!")
@@ -78,23 +78,23 @@ func TestFirstSync(t *testing.T) {
 			if len(foundMd) != len(test.wantedFiles) {
 				t.Fatalf("Lengths don't match between foundMd and wantedFiles. foundMd: %v wantedFiles: %v", foundMd, test.wantedFiles)
 			}
-			pagesGenerated := []string{}
-			filepath.WalkDir(filepath.Join(globals.AssetsPath, "pages"), func(path string, d fs.DirEntry, err error) error {
+			postsGenerated := []string{}
+			filepath.WalkDir(filepath.Join(globals.AssetsPath, "posts"), func(path string, d fs.DirEntry, err error) error {
 				if stat, _ := os.Stat(path); stat.IsDir() {
 					return nil
 				}
-				pagesGenerated = append(pagesGenerated, path)
+				postsGenerated = append(postsGenerated, path)
 				return nil
 			})
-			if len(test.wantedFiles) != len(pagesGenerated) {
-				t.Fatalf("wantedFiles and pagesGenerated have different lengths. wantedFiles: %v pagesGenerated: %v", test.wantedFiles, pagesGenerated)
+			if len(test.wantedFiles) != len(postsGenerated) {
+				t.Fatalf("wantedFiles and postsGenerated have different lengths. wantedFiles: %v postsGenerated: %v", test.wantedFiles, postsGenerated)
 			}
 			for _, file := range test.wantedFiles {
 				if !slices.Contains(foundMd, filepath.Join(mdDir, file)+".md") {
 					t.Fatalf("%v not found in foundMd. foundMd: %v", filepath.Join(mdDir, file)+".md", foundMd)
 				}
-				if !slices.Contains(pagesGenerated, filepath.Join(globals.AssetsPath, "pages", file)+".html.br") {
-					t.Fatalf("%v not found in pagesGenerated. pagesGenerated: %v", filepath.Join(globals.AssetsPath, "pages", file)+".html.br", pagesGenerated)
+				if !slices.Contains(postsGenerated, filepath.Join(globals.AssetsPath, "posts", file)+".html.br") {
+					t.Fatalf("%v not found in postsGenerated. postsGenerated: %v", filepath.Join(globals.AssetsPath, "posts", file)+".html.br", postsGenerated)
 				}
 			}
 		})
@@ -243,7 +243,7 @@ func TestProcessSync_Events(t *testing.T) {
 			mdDir := filepath.Join(tempDir, "mdDir")
 			globals.AssetsPath = filepath.Join(tempDir, "assets")
 			os.MkdirAll(mdDir, 0o777)
-			os.MkdirAll(filepath.Join(globals.AssetsPath, "pages"), 0o777)
+			os.MkdirAll(filepath.Join(globals.AssetsPath, "posts"), 0o777)
 			os.MkdirAll(filepath.Join(globals.AssetsPath, "templates"), 0o777)
 			os.Create(filepath.Join(globals.AssetsPath, "templates", "base.tmpl"))
 			os.MkdirAll(filepath.Join(globals.AssetsPath, "homePage"), 0o777)
@@ -258,7 +258,7 @@ func TestProcessSync_Events(t *testing.T) {
 			}
 
 			for _, file := range tc.preCreateHTML {
-				fullPath := filepath.Join(globals.AssetsPath, "pages", file)
+				fullPath := filepath.Join(globals.AssetsPath, "posts", file)
 				os.MkdirAll(filepath.Dir(fullPath), 0o777)
 				os.WriteFile(fullPath, []byte("<html></html>"), 0o644)
 			}
@@ -293,14 +293,14 @@ func TestProcessSync_Events(t *testing.T) {
 
 			// 5. Assertions
 			for _, expectedHTML := range tc.expectHTMLFiles {
-				target := filepath.Join(globals.AssetsPath, "pages", expectedHTML)
+				target := filepath.Join(globals.AssetsPath, "posts", expectedHTML)
 				if _, err := os.Stat(target); os.IsNotExist(err) {
 					t.Errorf("Expected HTML file %s was not generated", expectedHTML)
 				}
 			}
 
 			for _, expectedDeleted := range tc.expectDeleted {
-				target := filepath.Join(globals.AssetsPath, "pages", expectedDeleted)
+				target := filepath.Join(globals.AssetsPath, "posts", expectedDeleted)
 				if _, err := os.Stat(target); err == nil {
 					t.Errorf("Expected HTML file %s to be deleted, but it still exists", expectedDeleted)
 				}

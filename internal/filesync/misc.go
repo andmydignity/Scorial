@@ -32,8 +32,8 @@ func purgeOrphans(db *sql.DB, existingFiles []string, mdDir string) error {
 	if err != nil {
 		return err
 	}
-	pagesDir := filepath.Join(globals.AssetsPath, "posts")
-	err = purgeOrphanedHTMLs(pagesDir, mdDir, set, db)
+	postsDir := filepath.Join(globals.AssetsPath, "posts")
+	err = purgeOrphanedHTMLs(postsDir, mdDir, set, db)
 	if err != nil {
 		return err
 	}
@@ -96,18 +96,18 @@ func purgeOrphanedChecksums(db *sql.DB, fileNames []string, mdDir string) (error
 	return err, &set
 }
 
-func purgeOrphanedHTMLs(pagesDir, mdDir string, set *map[string]struct{}, db *sql.DB) error {
-	err := filepath.WalkDir(pagesDir, func(path string, d os.DirEntry, err error) error {
+func purgeOrphanedHTMLs(postsDir, mdDir string, set *map[string]struct{}, db *sql.DB) error {
+	err := filepath.WalkDir(postsDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			if os.IsNotExist(err) {
-				return nil // assets/pages/ doesn't exist yet, nothing to purge
+				return nil // assets/posts/ doesn't exist yet, nothing to purge
 			}
 			return err
 		}
 
 		if !d.IsDir() && strings.HasSuffix(path, ".html.br") {
 			// Find the relative path of the HTML file
-			relPath, err := filepath.Rel(pagesDir, path)
+			relPath, err := filepath.Rel(postsDir, path)
 			if err != nil {
 				return err
 			}

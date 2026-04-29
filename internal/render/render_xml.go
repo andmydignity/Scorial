@@ -32,7 +32,7 @@ func renderAtom(conf *RenderConfig) error {
 		Pages         []PostInfoWithContent
 	}
 	contentPages, err := GetPosts(conf.PagesInAtomFeed, db)
-	var pages []PostInfoWithContent
+	var posts []PostInfoWithContent
 	if conf.MainContentInAtomFeed {
 		for _, x := range contentPages {
 			pagePath := filepath.Join(globals.AssetsPath, "posts", strings.TrimPrefix(strings.ReplaceAll(x.URL, "%20", " "), "/posts")+".html.br")
@@ -65,14 +65,14 @@ func renderAtom(conf *RenderConfig) error {
 			finalContent := styles + "\n" + mainContent
 			finalContent = strings.ReplaceAll(finalContent, "]]>", "") // Strip CDATA closures
 			wContent := PostInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, finalContent}
-			pages = append(pages, wContent)
+			posts = append(posts, wContent)
 		}
 	} else {
 		for _, x := range contentPages {
-			pages = append(pages, PostInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, ""})
+			posts = append(posts, PostInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, ""})
 		}
 	}
-	feed := FeedData{conf.SiteName, conf.SiteDescription, conf.SiteURL, conf.SiteName, time.Now().Format(time.RFC3339), pages}
+	feed := FeedData{conf.SiteName, conf.SiteDescription, conf.SiteURL, conf.SiteName, time.Now().Format(time.RFC3339), posts}
 
 	ts, err := template.ParseFiles(filepath.Join(globals.AssetsPath, "atom", "atom.tmpl"))
 	if err != nil {
