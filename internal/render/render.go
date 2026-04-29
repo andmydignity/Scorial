@@ -47,18 +47,23 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig) error {
 	page, info, err := parseMdToHTML(loadFrom)
 	if err != nil {
 		if errors.Is(err, ErrIsDraft) {
-			// Don't do anything for a draft files.
 			return nil
 		}
+		return err
 	}
-	overviewText := getOverviewText(rndrConf.OverviewCharCount, page) + "..."
+	var overviewText string
+	if info.summary == "" {
+		overviewText = getOverviewText(rndrConf.OverviewCharCount, page) + "..."
+	} else {
+		overviewText = info.summary
+	}
 	overviewImg := overviewIMG(page)
-	rel, err := filepath.Rel(filepath.Join(globals.AssetsPath, "pages"), saveTo)
+	rel, err := filepath.Rel(filepath.Join(globals.AssetsPath, "posts"), saveTo)
 	if err != nil {
 		return err
 	}
 	URL, _ := strings.CutSuffix(rel, ".html.br")
-	URL = "/pages/" + URL
+	URL = "/posts/" + URL
 	fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
 	entries, err := os.ReadDir(filepath.Join(globals.AssetsPath, "templates"))
 	if err != nil {
@@ -104,7 +109,7 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err = db.ExecContext(ctx, `
-    INSERT INTO pages (url, title, overview, overviewImg, category, createdAt, modifiedAt) 
+    INSERT INTO posts (url, title, overview, overviewImg, category, createdAt, modifiedAt) 
     VALUES (?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)
     ON CONFLICT(url) DO UPDATE SET 
         title=excluded.title, 
@@ -138,20 +143,20 @@ func renderHome(conf *RenderConfig) error {
 		SiteName        string
 		SiteDescription string
 		Year            int
-		LatestPages     []PageInfo
-		AllPages        []PageInfo
+		LatestPosts     []PostInfo
+		AllPosts        []PostInfo
 		LogoPath        string
 		FaviconPath     string
 	}
-	latestPages, err := GetPages(conf.CardsInHomePage, db)
+	latestPosts, err := GetPosts(conf.CardsInHomePage, db)
 	if err != nil {
 		return err
 	}
-	allPages, err := GetPages(2147483647, db)
+	allPosts, err := GetPosts(2147483647, db)
 	if err != nil {
 		return err
 	}
-	homeData := homeDataStruct{conf.SiteName, conf.SiteName, conf.SiteDescription, time.Now().Year(), latestPages, allPages, conf.LogoPath, conf.FaviconPath}
+	homeData := homeDataStruct{conf.SiteName, conf.SiteName, conf.SiteDescription, time.Now().Year(), latestPosts, allPosts, conf.LogoPath, conf.FaviconPath}
 	entries, err := os.ReadDir(filepath.Join(globals.AssetsPath, "homePage"))
 	if err != nil {
 		return err

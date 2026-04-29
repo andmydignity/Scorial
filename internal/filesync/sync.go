@@ -57,8 +57,11 @@ func FirstSync(rndrConf *render.RenderConfig) error {
 			}
 			prefixCut, _ := strings.CutPrefix(file, mdDirAbs)
 			extensionSanitized, _ := strings.CutSuffix(prefixCut, ".md")
-			err = render.RenderNSave(file, filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf)
+			err = render.RenderNSave(file, filepath.Join(globals.AssetsPath, "posts", extensionSanitized), rndrConf)
 			if err != nil {
+				// if errors.Is(err, render.ErrIsDraft) {
+				// 	deleteFromPages(extensionSanitized, db)
+				// }
 				return err
 			}
 		}
@@ -124,7 +127,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 					return s == path
 				})
 
-				targetDir := filepath.Join(globals.AssetsPath, "pages", prefixCut)
+				targetDir := filepath.Join(globals.AssetsPath, "posts", prefixCut)
 				if err := os.RemoveAll(targetDir); err != nil {
 					logger.Error("Error while deleting directory recursively.", "error", err.Error())
 				}
@@ -136,20 +139,20 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 			}
 			suffixCut, _ := strings.CutSuffix(path, ".md")
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
-			err = deleteHTML(filepath.Join(globals.AssetsPath, "pages", extensionSanitized+".html.br"))
+			err = deleteHTML(filepath.Join(globals.AssetsPath, "posts", extensionSanitized+".html.br"))
 			if err != nil {
 				logger.Error("Couldn't delete HTML file!", "error", err.Error())
 			}
 
-			deleteFromCache(filepath.Join(globals.AssetsPath, "pages", extensionSanitized+".html.br"))
+			deleteFromCache(filepath.Join(globals.AssetsPath, "posts", extensionSanitized+".html.br"))
 			// Use prefixCut for EventRemove and extensionSanitized for EventRename as per your original logic
 			deleteTerm := prefixCut
 			//if slices.Contains(types, fswatcher.EventRename) {
 			//	deleteTerm = extensionSanitized
 			//}
 
-			if err = deleteFromPages(deleteTerm, db); err != nil {
-				logger.Error("Couldn't delete orphaned page from 'pages' table!", "error", err.Error())
+			if err = deleteFromPosts(deleteTerm, db); err != nil {
+				logger.Error("Couldn't delete orphaned page from 'posts' table!", "error", err.Error())
 			}
 
 			err = render.RenderSpecials(rndrConf)
@@ -175,7 +178,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 						}
 						dirs = append(dirs, path)
 						extensionSanitized, _ := strings.CutPrefix(path, absMdDir)
-						err = os.MkdirAll(filepath.Join(globals.AssetsPath, "pages", extensionSanitized), 0o755)
+						err = os.MkdirAll(filepath.Join(globals.AssetsPath, "posts", extensionSanitized), 0o755)
 						if err != nil {
 							logger.Error("Mkdir failed", "error", err.Error())
 						}
@@ -190,7 +193,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 								appendChecksum(db, walkPath, checksum)
 								prefixCutWalk, _ := strings.CutPrefix(walkPath, absMdDir)
 								extSanitizedWalk, _ := strings.CutSuffix(prefixCutWalk, ".md")
-								render.RenderNSave(walkPath, filepath.Join(globals.AssetsPath, "pages", extSanitizedWalk), rndrConf)
+								render.RenderNSave(walkPath, filepath.Join(globals.AssetsPath, "posts", extSanitizedWalk), rndrConf)
 							}
 							return nil
 						})
@@ -226,7 +229,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 			extensionSanitized, _ := strings.CutPrefix(suffixCut, absMdDir)
 			if err := render.RenderNSave(
 				path,
-				filepath.Join(globals.AssetsPath, "pages", extensionSanitized), rndrConf); err != nil {
+				filepath.Join(globals.AssetsPath, "posts", extensionSanitized), rndrConf); err != nil {
 				logger.Error("Render error", "error", err)
 			}
 		}

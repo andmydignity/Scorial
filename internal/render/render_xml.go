@@ -13,7 +13,7 @@ import (
 
 func renderAtom(conf *RenderConfig) error {
 	db := conf.DB
-	type PageInfoWithContent struct {
+	type PostInfoWithContent struct {
 		URL          string
 		ModifiedAt   string
 		CreatedAt    string
@@ -29,13 +29,13 @@ func renderAtom(conf *RenderConfig) error {
 		SiteURL       string
 		AuthorName    string
 		LastBuildDate string
-		Pages         []PageInfoWithContent
+		Pages         []PostInfoWithContent
 	}
-	contentPages, err := GetPages(conf.PagesInAtomFeed, db)
-	var pages []PageInfoWithContent
+	contentPages, err := GetPosts(conf.PagesInAtomFeed, db)
+	var pages []PostInfoWithContent
 	if conf.MainContentInAtomFeed {
 		for _, x := range contentPages {
-			pagePath := filepath.Join(globals.AssetsPath, "pages", strings.Trim(strings.ReplaceAll(x.URL, "%20", " "), "/pages")+".html.br")
+			pagePath := filepath.Join(globals.AssetsPath, "posts", strings.TrimPrefix(strings.ReplaceAll(x.URL, "%20", " "), "/posts")+".html.br")
 			raw, err := loadFromFile(pagePath)
 			if err != nil {
 				return err
@@ -64,12 +64,12 @@ func renderAtom(conf *RenderConfig) error {
 			// 3. Combine and remove any literal "]]>" that breaks CDATA
 			finalContent := styles + "\n" + mainContent
 			finalContent = strings.ReplaceAll(finalContent, "]]>", "") // Strip CDATA closures
-			wContent := PageInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, finalContent}
+			wContent := PostInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, finalContent}
 			pages = append(pages, wContent)
 		}
 	} else {
 		for _, x := range contentPages {
-			pages = append(pages, PageInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, ""})
+			pages = append(pages, PostInfoWithContent{x.URL, x.ModifiedAt, x.CreatedAt, x.Title, x.ImgPath, x.OverviewText, x.Category, ""})
 		}
 	}
 	feed := FeedData{conf.SiteName, conf.SiteDescription, conf.SiteURL, conf.SiteName, time.Now().Format(time.RFC3339), pages}

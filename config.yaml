@@ -17,7 +17,7 @@ siteName: "My Site"
 logoPath: ""
 faviconPath: ""
 description: "My site best site!"
-#Amount of chars to be displayed on home page overviews.
+#Amount of first chars of the page the show in the home page/Atom feed summary in case a summary isn't provided in the frontmatter.
 overviewCharCount: 200
 
 #IMPORTANT: Atom feed assumes your page uses HTTPS, at least for now.
@@ -40,4 +40,5 @@ burst: 30
 
 #If you add domain(s) that point to this server, you can leave the cert and key path empty. Certmagic will get it for you.
 #For Certmagic to get TLS certs, port setting must be at 443 and port 80 must also be accesable.
+#First domain in the list is used for Atom feed, for ID and links.
 #domains: []

@@ -53,12 +53,14 @@ type ameta struct {
 	Tags     []string  `yaml:"tags"`
 	Draft    bool      `yaml:"draft"`
 	Date     time.Time `yaml:"date"`
+	Summary  string    `yaml:"summary"`
 }
 
 type mdinfo struct {
 	title    string
 	category string
 	date     string
+	summary  string
 }
 
 var (
@@ -78,6 +80,7 @@ func parseMdToHTML(loadFrom string) (data []byte, mdInfo mdinfo, err error) {
 	if err != nil {
 		return nil, mdinfo{}, err
 	}
+	info.summary = m.Summary
 	tempDate := time.Time{}
 	if m.Date.IsZero() {
 		stat, err := os.Stat(loadFrom)
@@ -117,6 +120,7 @@ func parseMdToHTML(loadFrom string) (data []byte, mdInfo mdinfo, err error) {
 	if errors.Is(err, ErrFaultyUTF8) {
 		return nil, mdinfo{}, ErrFaultyUTF8
 	}
+
 	if err != nil {
 		fileName, _ := strings.CutSuffix(filepath.Base(loadFrom), ".md")
 		info.title = fileName

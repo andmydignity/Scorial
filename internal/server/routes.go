@@ -12,7 +12,7 @@ import (
 func (cms *CmsStruct) routes(ratelimitMode bool) http.Handler {
 	router := httprouter.New()
 	router.GET("/", cms.headersMiddleware(cms.homeHandler))
-	router.GET("/pages/*name", cms.headersMiddleware(cms.pageHandler))
+	router.GET("/posts/*name", cms.headersMiddleware(cms.pageHandler))
 	router.GET("/atom.xml", cms.headersMiddleware(cms.atomHandler))
 	router.ServeFiles("/assets/style/*filepath", http.Dir(filepath.Join(globals.AssetsPath, "style")))
 	router.ServeFiles("/assets/media/*filepath", http.Dir(filepath.Join(globals.AssetsPath, "media")))

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-type PageInfo struct {
+type PostInfo struct {
 	URL          string
 	ModifiedAt   string
 	CreatedAt    string
@@ -135,8 +135,8 @@ func overviewIMG(page []byte) string {
 	return imgSrc
 }
 
-func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
-	pages := []PageInfo{}
+func GetPosts(numberOf int, db *sql.DB) ([]PostInfo, error) {
+	pages := []PostInfo{}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -148,7 +148,7 @@ func GetPages(numberOf int, db *sql.DB) ([]PageInfo, error) {
 	defer res.Close()
 
 	for res.Next() {
-		var page PageInfo
+		var page PostInfo
 		err = res.Scan(&page.URL, &page.Title, &page.OverviewText, &page.ImgPath, &page.Category, &page.ModifiedAt, &page.CreatedAt)
 		if err != nil {
 			return nil, err

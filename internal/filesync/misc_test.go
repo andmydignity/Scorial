@@ -27,9 +27,9 @@ func mockDB(t *testing.T) *sql.DB {
 		t.Fatal("Failed to create checksum table", "error", err.Error())
 		return nil
 	}
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS pages (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT , category TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP  )`)
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS posts (url TEXT PRIMARY KEY,title TEXT NOT NULL, overview TEXT, overviewImg TEXT , category TEXT ,modifiedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP  )`)
 	if err != nil {
-		t.Fatal("Failed to create pages table.", "error", err.Error())
+		t.Fatal("Failed to create posts table.", "error", err.Error())
 	}
 	t.Cleanup(func() {
 		db.Close()

@@ -32,12 +32,12 @@ func purgeOrphans(db *sql.DB, existingFiles []string, mdDir string) error {
 	if err != nil {
 		return err
 	}
-	pagesDir := filepath.Join(globals.AssetsPath, "pages")
+	pagesDir := filepath.Join(globals.AssetsPath, "posts")
 	err = purgeOrphanedHTMLs(pagesDir, mdDir, set, db)
 	if err != nil {
 		return err
 	}
-	return purgeOrphanPages(mdDir, db)
+	return purgeOrphanPosts(mdDir, db)
 }
 
 // Func purgeOrphanedChecksums purges orphaned checksum entries
@@ -88,7 +88,7 @@ func purgeOrphanedChecksums(db *sql.DB, fileNames []string, mdDir string) (error
 		}
 		filename, _ := strings.CutPrefix(file, mdDirAbs)
 		filename, _ = strings.CutSuffix(filename, ".md")
-		if err = deleteFromPages(filename, db); err != nil {
+		if err = deleteFromPosts(filename, db); err != nil {
 			return err, nil
 		}
 	}
@@ -122,7 +122,7 @@ func purgeOrphanedHTMLs(pagesDir, mdDir string, set *map[string]struct{}, db *sq
 					return err
 				}
 				filename, _ := strings.CutSuffix(mdRelPath, ".md")
-				if err = deleteFromPages(filename, db); err != nil {
+				if err = deleteFromPosts(filename, db); err != nil {
 					return err
 				}
 			}
@@ -132,21 +132,21 @@ func purgeOrphanedHTMLs(pagesDir, mdDir string, set *map[string]struct{}, db *sq
 	return err
 }
 
-func deleteFromPages(path string, db *sql.DB) error {
+func deleteFromPosts(path string, db *sql.DB) error {
 	trim := strings.TrimSuffix(path, ".md")
 
-	url := "/pages" + trim
+	url := "/posts" + trim
 	url = strings.ReplaceAll(url, " ", "%20")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err := db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
+	_, err := db.ExecContext(ctx, "DELETE FROM posts WHERE url = ?", url)
 	return err
 }
 
-func purgeOrphanPages(mdDir string, db *sql.DB) error {
+func purgeOrphanPosts(mdDir string, db *sql.DB) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	res, err := db.QueryContext(ctx, "SELECT url FROM pages")
+	res, err := db.QueryContext(ctx, "SELECT url FROM posts")
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func purgeOrphanPages(mdDir string, db *sql.DB) error {
 		if err != nil {
 			return err
 		}
-		path, ok := strings.CutPrefix(url, "/pages/")
+		path, ok := strings.CutPrefix(url, "/posts/")
 		if !ok {
 			return fmt.Errorf("filesync/misc.go:163 Invalid URL")
 		}
@@ -171,7 +171,7 @@ func purgeOrphanPages(mdDir string, db *sql.DB) error {
 		}
 	}
 	for _, url := range tbd {
-		_, err = db.ExecContext(ctx, "DELETE FROM pages WHERE url = ?", url)
+		_, err = db.ExecContext(ctx, "DELETE FROM posts WHERE url = ?", url)
 		if err != nil {
 			return err
 		}

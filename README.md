@@ -1,8 +1,8 @@
-# CMS thing
+# Scorial
 
 Currently in very early development. Can tell you it's a CMS tho.
 
-## Phase 1
+## Phase 1 (Done)
 
 Routing scaffolding: Done  
 Middlewares: Done  
@@ -10,18 +10,18 @@ Folder syncing: Done (took a long time)
 Template Injection: Done  
 Dynamic routing: Done.  
 Home page: Done.  
-Tests: In Progress (Should have done first...)  
+Tests: Done for filesync (will come back later, hopefully... )
 
 ## Phase 2
 
 Add obsidian features (AST): Not there  
-RSS: Not there  
+Atom feed: Done
 
 ## Phase 3
 
 Intersyncing of server and user mdFiles via Git: Not there  
 Dashboard: Not there.  
-In-Browser .md Editing: I hope i can pull it off...  
+In-Browser .md Editing: I hope i can pull it off...
 
 ### Also
 
