@@ -64,8 +64,12 @@ jobs:
           # Move the compiled binary
           mv ${{ matrix.binary_name }} package/
 
-          # Copy the required directories into the staging folder
-          cp -r assets databases certs package/
+          # Copy the assets directory from the repo
+          cp -r assets package/
+
+          # Create fresh, empty directories for runtime data
+          mkdir package/databases
+          mkdir package/certs
 
           # Zip the contents of the staging folder
           cd package
@@ -92,7 +96,6 @@ jobs:
       - name: Delete Old Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # This deletes the 'latest' release and tag so the new one starts perfectly clean
         run: gh release delete latest --cleanup-tag -y || true
 
       - name: Update Rolling Release
