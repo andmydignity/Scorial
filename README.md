@@ -1,5 +1,5 @@
 
-![Logo](https://github.com/andmydignity/Scorial/blob/main/Scorial.png?raw=true)
+![Logo](https://raw.githubusercontent.com/andmydignity/Scorial/refs/heads/main/Scorial.png)
 
 
 # Scorial
