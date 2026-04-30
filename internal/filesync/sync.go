@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -119,7 +120,7 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 		// Handle deletions and original globals of renames
 		if slices.Contains(types, fswatcher.EventRemove) ||
 			(slices.Contains(types, fswatcher.EventRename) && !(slices.Contains(types, fswatcher.EventCreate) || slices.Contains(types, fswatcher.EventMod))) {
-			// Time for some editors to actually create the file. (looking at you, vim)
+			// Time for some editors / Windows to actually create the file. (looking at you, vim)
 			time.Sleep(50 * time.Millisecond)
 			if _, err := os.Stat(path); err == nil {
 				// It still exists, let the create/mod block handle the update
@@ -171,6 +172,10 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 
 		// Handle new files/directories and modifications
 		if slices.Contains(types, fswatcher.EventCreate) || slices.Contains(types, fswatcher.EventMod) {
+			// Give Windows processes a moment to release the lock
+			if runtime.GOOS == "windows" {
+				time.Sleep(50 * time.Millisecond)
+			}
 			st, err := os.Stat(path)
 			if err != nil {
 				if !os.IsNotExist(err) {
