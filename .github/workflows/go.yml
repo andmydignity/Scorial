@@ -96,8 +96,9 @@ jobs:
 
       - name: Delete Old Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release delete latest --cleanup-tag -y || true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Explicitly passing the repository fixes the silent failure
+        run: gh release delete latest --cleanup-tag -y --repo ${{ github.repository }} || true
 
       - name: Update Rolling Release
         uses: softprops/action-gh-release@v2
