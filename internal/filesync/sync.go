@@ -105,6 +105,9 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 			return err
 		}
 		dirs = append(dirs, abs)
+		if err := watcher.AddPath(abs); err != nil {
+			logger.Error("Failed to add watcher to subdirectory", "error", err.Error())
+		}
 		return nil
 	})
 	if err != nil {

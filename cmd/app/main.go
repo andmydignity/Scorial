@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -72,6 +74,23 @@ func exit(code int) {
 
 func main() {
 	globals.SetPaths()
+	deamon := flag.Bool("d", false, "Run as a background daemon")
+	flag.Parse()
+	if *deamon {
+		exe, err := os.Executable()
+		if err == nil {
+			var args []string
+			for _, arg := range os.Args[1:] {
+				if arg != "-d" && arg != "--d" {
+					args = append(args, arg)
+				}
+			}
+			cmd := exec.Command(exe, args...)
+			cmd.Start()
+			fmt.Println("Scorial is running in the background.")
+			os.Exit(0)
+		}
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	file, err := os.Open(filepath.Join(globals.BinaryPath, "config.yaml"))
 	if err != nil {
