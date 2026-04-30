@@ -249,6 +249,10 @@ func processSync(ctx context.Context, watcher fswatcher.Watcher, logger *slog.Lo
 			needsSpecialRender = true
 		}
 		if needsSpecialRender && len(watcher.Events()) == 0 {
+			// Windows being Windows, doesn't reflect the file changes immediately. Fuck Windows.
+			if runtime.GOOS == "windows" {
+				time.Sleep(50 * time.Millisecond)
+			}
 			if err := render.RenderSpecials(rndrConf); err != nil {
 				logger.Error("Couldn't render specials.", "error", err.Error())
 			}

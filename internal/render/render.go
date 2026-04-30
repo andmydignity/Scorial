@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -106,6 +107,9 @@ func RenderNSave(loadFrom, saveTo string, rndrConf *RenderConfig) error {
 		return err
 	}
 	URL = strings.ReplaceAll(URL, " ", "%20")
+	if runtime.GOOS == "windows" {
+		URL = strings.ReplaceAll(URL, "\\", "/")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_, err = db.ExecContext(ctx, `
